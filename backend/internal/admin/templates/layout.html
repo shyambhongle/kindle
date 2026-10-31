@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.Title}} · Dashboard</title>
+<link rel="stylesheet" href="/admin/static/admin.css">
+</head>
+<body>
+{{if eq .Active "login"}}
+<main class="login">{{template "content" .}}</main>
+{{else}}
+<div class="shell">
+  <nav class="side">
+    <div class="brand">Kindle Dashboard</div>
+    <a href="/admin/" class="{{if eq .Active "overview"}}active{{end}}">Overview</a>
+    <a href="/admin/tasks" class="{{if eq .Active "tasks"}}active{{end}}">Tasks</a>
+    <a href="/admin/weather" class="{{if eq .Active "weather"}}active{{end}}">Weather</a>
+    <a href="/admin/news" class="{{if eq .Active "news"}}active{{end}}">News</a>
+    <a href="/admin/books" class="{{if eq .Active "books"}}active{{end}}">Books</a>
+    <a href="/admin/guitar" class="{{if eq .Active "guitar"}}active{{end}}">Guitar</a>
+    <a href="/admin/vocab" class="{{if eq .Active "vocab"}}active{{end}}">English vocab</a>
+    <a href="/admin/course" class="{{if eq .Active "course"}}active{{end}}">German course</a>
+    <a href="/admin/german" class="{{if eq .Active "german"}}active{{end}}">German words</a>
+    <a href="/admin/english" class="{{if eq .Active "english"}}active{{end}}">English daily</a>
+    <a href="/admin/history" class="{{if eq .Active "history"}}active{{end}}">History</a>
+    <a href="/admin/settings" class="{{if eq .Active "settings"}}active{{end}}">Settings</a>
+    <form method="post" action="/admin/logout"><button class="sm">Log out</button></form>
+  </nav>
+  <main>
+    {{if .Flash}}<div class="flash">{{.Flash}}</div>{{end}}
+    {{if .Err}}<div class="flash err">{{.Err}}</div>{{end}}
+    {{template "content" .}}
+  </main>
+</div>
+{{end}}
+</body>
+</html>

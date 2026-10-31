@@ -28,3 +28,6 @@ crash.log
 # local scratch
 tmp/
 *.log
+
+# database backups (personal data)
+backend/backups/

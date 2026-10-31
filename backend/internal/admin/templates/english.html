@@ -1,0 +1,100 @@
+{{define "content"}}
+{{$d := .Data}}
+<div class="row between" style="margin-bottom:18px">
+  <h1 style="margin:0">English daily</h1>
+  <div class="row">
+    {{if $d.Configured}}<span class="badge ok">Claude API: {{$d.Model}}</span>{{else}}<span class="badge err">ANTHROPIC_API_KEY not set</span>{{end}}
+  </div>
+</div>
+
+<div class="grid c4">
+  <div class="card stat"><span class="v">{{$d.Days7}}</span><span class="k">of last 7 days practised</span></div>
+  <div class="card stat"><span class="v">{{if $d.Pack}}{{len $d.Pack.Phrases}}{{else}}–{{end}}</span><span class="k">phrases {{if $d.IsToday}}today{{else}}on {{$d.Date}}{{end}}</span></div>
+  <div class="card stat"><span class="v">{{if $d.Pack}}{{$d.Pack.Passage.Minutes}}{{else}}–{{end}}</span><span class="k">min read-aloud ({{if $d.Pack}}{{$d.Pack.Passage.WordCount}}{{else}}0{{end}} words)</span></div>
+  <div class="card stat"><span class="v">{{if $d.Pack}}{{if and $d.Pack.ReadDone $d.Pack.SpokeDone}}2/2{{else if or $d.Pack.ReadDone $d.Pack.SpokeDone}}1/2{{else}}0/2{{end}}{{else}}–{{end}}</span><span class="k">read + spoke done</span></div>
+</div>
+
+<div class="card">
+  <div class="row between">
+    <h2 style="margin:0">Pack for {{$d.Date}}{{if $d.IsToday}} (today){{end}}</h2>
+    <div class="row">
+      <form method="get" action="/admin/english" class="row"><input type="date" name="date" value="{{$d.Date}}"><button class="sm">Show</button></form>
+      <form method="post" action="/admin/english/generate" class="row"><input type="hidden" name="date" value="{{$d.Date}}"><button class="sm primary">{{if $d.Pack}}Regenerate{{else}}Generate{{end}}</button></form>
+    </div>
+  </div>
+  <p class="muted small">The scheduler generates today's pack in the morning and tomorrow's after 18:00, so the Kindle never waits. Regenerate replaces the day's material. Takes 20 to 40 seconds.</p>
+  {{with $d.Pack}}
+    {{if eq .Status "error"}}<div class="flash err">Generation failed: {{.Error}}</div>{{end}}
+    <div class="row" style="gap:8px;margin-bottom:12px">
+      <form method="post" action="/admin/english/{{.Day}}/done" class="inline"><input type="hidden" name="part" value="read"><input type="hidden" name="done" value="{{if .ReadDone}}0{{else}}1{{end}}"><button class="sm {{if .ReadDone}}{{else}}primary{{end}}">{{if .ReadDone}}✓ Read aloud done (undo){{else}}Mark read aloud done{{end}}</button></form>
+      <form method="post" action="/admin/english/{{.Day}}/done" class="inline"><input type="hidden" name="part" value="speak"><input type="hidden" name="done" value="{{if .SpokeDone}}0{{else}}1{{end}}"><button class="sm {{if .SpokeDone}}{{else}}primary{{end}}">{{if .SpokeDone}}✓ Spoke on topic (undo){{else}}Mark speaking done{{end}}</button></form>
+      <span class="muted small">generated {{dt .GeneratedAt}} · {{.Model}}</span>
+    </div>
+  {{end}}
+</div>
+
+{{with $d.Pack}}
+<div class="grid c2">
+  <div class="card">
+    <h2>Phrases for the day</h2>
+    <p class="muted small">Use at least three of them in real conversations today. The "instead of" column is the plainer thing you would normally say.</p>
+    <table>
+      <tr><th>Phrase</th><th>Meaning</th><th>Instead of</th><th></th></tr>
+      {{range .Phrases}}<tr><td><strong>{{.Phrase}}</strong><div class="muted small" style="font-style:italic">{{.Example}}</div></td><td class="small">{{.Meaning}}</td><td class="small muted">{{.Instead}}</td><td><span class="badge">{{.Register}}</span></td></tr>{{end}}
+    </table>
+  </div>
+  <div class="card">
+    <h2>Tonight's talk · 2 to 3 minutes</h2>
+    <p><strong>{{.Topic.Title}}</strong></p>
+    <p class="small muted">{{.Topic.Why}}</p>
+    <h3>Pick an angle</h3>
+    <ol style="padding-left:20px" class="small">{{range .Topic.Angles}}<li>{{.}}</li>{{end}}</ol>
+    <h3>Structure</h3>
+    <ul class="plain small">{{range .Topic.Structure}}<li>{{.}}</li>{{end}}</ul>
+    <h3>Expressions to use</h3>
+    <p class="small">{{range $i, $e := .Topic.Expressions}}{{if $i}} · {{end}}{{$e}}{{end}}</p>
+    {{if .Topic.Twist}}<p class="small"><strong>End with:</strong> {{.Topic.Twist}}</p>{{end}}
+  </div>
+</div>
+
+<div class="card">
+  <div class="row between"><h2 style="margin:0">Read aloud · {{.Passage.Title}}</h2><span class="muted small">{{.Passage.Theme}} · {{.Passage.WordCount}} words · about {{.Passage.Minutes}} min</span></div>
+  <div style="max-width:760px;font-size:16px;line-height:1.7;margin-top:12px">{{range .Passage.Paragraphs}}<p>{{.}}</p>{{end}}</div>
+  <div class="grid c3" style="margin-top:12px">
+    <div><h3>Words worth noticing</h3><table class="small">{{range .Passage.Words}}<tr><td><strong>{{.Word}}</strong></td><td class="muted">{{.Meaning}}</td></tr>{{end}}</table></div>
+    <div><h3>Delivery tips</h3><ul class="plain small">{{range .Passage.Tips}}<li>{{.}}</li>{{end}}</ul></div>
+    <div><h3>Think about</h3><ul class="plain small">{{range .Passage.Questions}}<li>{{.}}</li>{{end}}</ul></div>
+  </div>
+  <form method="post" action="/admin/english/{{.Day}}/note" style="margin-top:12px">
+    <div class="field"><label>Your note after practising (what was hard, what you want to repeat)</label><textarea name="note" rows="2">{{.Note}}</textarea></div>
+    <button class="sm">Save note</button>
+  </form>
+</div>
+{{else}}
+<div class="card"><p class="muted">No pack for {{$d.Date}}. {{if $d.Configured}}Press Generate above.{{else}}Set ANTHROPIC_API_KEY in .env and restart the backend.{{end}}</p></div>
+{{end}}
+
+<div class="grid c2">
+  <div class="card" id="prefs">
+    <h2>What to generate</h2>
+    <form method="post" action="/admin/english/prefs">
+      <div class="field"><label>Current focus (what you want to get better at; goes into every prompt)</label><textarea name="focus" rows="2">{{$d.Prefs.Focus}}</textarea></div>
+      <div class="field"><label>Passage themes, one per line (rotated day by day)</label><textarea name="themes" rows="8">{{$d.ThemesText}}</textarea></div>
+      <div class="field"><label>Keep out</label><input type="text" name="avoid" value="{{$d.Prefs.Avoid}}"></div>
+      <div class="fields">
+        <div><label>Phrases per day (3 to 15)</label><input type="number" name="phrase_count" min="3" max="15" value="{{$d.Prefs.PhraseCount}}"></div>
+        <div><label>Passage length in words (300 to 1200; 700 is about 5 minutes aloud)</label><input type="number" name="passage_words" min="300" max="1200" step="50" value="{{$d.Prefs.PassageWords}}"></div>
+      </div>
+      <button class="primary sm">Save preferences</button>
+    </form>
+  </div>
+  <div class="card">
+    <h2>Archive</h2>
+    <p class="muted small">The last 30 days are also sent to the model so titles, stories and phrases do not repeat.</p>
+    <table>
+      <tr><th>Day</th><th>Passage</th><th>Topic</th><th>Done</th></tr>
+      {{range $d.Recent}}<tr><td style="white-space:nowrap"><a href="/admin/english?date={{.Day}}">{{.Day}}</a></td><td class="small">{{if eq .Status "error"}}<span class="badge err">failed</span>{{else}}{{.Passage}}{{end}}</td><td class="small">{{.Topic}}</td><td class="small">{{if .ReadDone}}read{{end}}{{if and .ReadDone .SpokeDone}} + {{end}}{{if .SpokeDone}}spoke{{end}}</td></tr>{{else}}<tr><td colspan="4" class="muted">Nothing generated yet.</td></tr>{{end}}
+    </table>
+  </div>
+</div>
+{{end}}

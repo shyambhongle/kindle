@@ -1,0 +1,59 @@
+{{define "content"}}
+{{$d := .Data}}
+<div class="row between" style="margin-bottom:18px">
+  <h1 style="margin:0">Guitar plan</h1>
+  <form method="post" action="/admin/guitar/current" class="row">
+    <label style="margin:0">Current week</label>
+    <input type="number" name="week" value="{{$d.Current}}" min="1" style="width:90px">
+    <button class="sm">Set</button>
+  </form>
+</div>
+
+<div class="grid c2">
+<div class="card">
+  <table>
+    <tr><th>Week</th><th>Lesson</th><th>Exercises</th><th>Status</th><th></th></tr>
+    {{range $d.Weeks}}
+    <tr class="{{if .Current}}current{{else if .CompletedOn}}past{{end}}">
+      <td>{{.Week}}</td>
+      <td><strong>{{.Lesson}}</strong>{{if .Notes}}<div class="muted small">{{.Notes}}</div>{{end}}</td>
+      <td><ul class="plain small">{{range .Exercises}}<li>{{.}}</li>{{end}}</ul></td>
+      <td>{{if .Current}}<span class="badge ok">current</span>{{else if .CompletedOn}}<span class="muted small">done {{ptrdate .CompletedOn}}</span>{{else}}<span class="muted small">upcoming</span>{{end}}</td>
+      <td style="white-space:nowrap;text-align:right">
+        <a class="btn sm" href="/admin/guitar?edit={{.Week}}">edit</a>
+        {{if .CompletedOn}}
+        <form method="post" action="/admin/guitar/{{.Week}}/complete" class="inline"><input type="hidden" name="undo" value="1"><button class="sm">undo</button></form>
+        {{else}}
+        <form method="post" action="/admin/guitar/{{.Week}}/complete" class="inline"><button class="sm">complete</button></form>
+        {{end}}
+      </td>
+    </tr>
+    {{else}}
+    <tr><td colspan="5" class="muted">No weeks yet.</td></tr>
+    {{end}}
+  </table>
+</div>
+
+<div>
+<div class="card">
+  <h2>{{if $d.Edit}}Edit week {{$d.Edit.Week}}{{else}}Add a week{{end}}</h2>
+  <form method="post" action="/admin/guitar">
+    <div class="fields">
+      <div><label>Week number</label><input type="number" name="week" min="1" value="{{if $d.Edit}}{{$d.Edit.Week}}{{else}}{{$d.NextWeek}}{{end}}" required></div>
+    </div>
+    <div class="field"><label>Lesson</label><input type="text" name="lesson" value="{{if $d.Edit}}{{$d.Edit.Lesson}}{{end}}" required placeholder="Barre chords: F major shape"></div>
+    <div class="field"><label>Exercises, one per line</label><textarea name="exercises" rows="6">{{if $d.Edit}}{{join $d.Edit.Exercises "\n"}}{{end}}</textarea></div>
+    <div class="field"><label>Notes</label><input type="text" name="notes" value="{{if $d.Edit}}{{$d.Edit.Notes}}{{end}}"></div>
+    <div class="row"><button class="primary">Save week</button>{{if $d.Edit}}<a class="btn" href="/admin/guitar">Cancel</a>{{end}}</div>
+  </form>
+  {{if $d.Edit}}
+  <form method="post" action="/admin/guitar/{{$d.Edit.Week}}/delete" style="margin-top:10px" onsubmit="return confirm('Delete week {{$d.Edit.Week}}?')"><button class="sm danger">Delete week</button></form>
+  {{end}}
+</div>
+<div class="card">
+  <h3>How the plan moves</h3>
+  <p class="muted small">The Kindle shows the current week. "Complete" on the current week marks it done today and moves you to the next week. Set the current week by hand to skip or repeat. Completed weeks keep their date, so History shows where you were.</p>
+</div>
+</div>
+</div>
+{{end}}

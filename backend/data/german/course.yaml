@@ -1,0 +1,387 @@
+# German A1 to B2 in 365 days, Goethe-Zertifikat B2. One entry per week, transcribed from the plan.
+# Loaded once (or with `dashboard import`); edit weeks on the dashboard's German course page afterwards.
+start_date: 2026-11-02
+exam_target: "Goethe-Zertifikat B2, Pune or Mumbai, October 2027"
+weeks:
+  - week: 1
+    phase: A1
+    grammar: "Alphabet and sounds (ä, ö, ü, ß, ch, r, final -en). sein and personal pronouns. Statement word order: verb in position 2"
+    vocab: "Greetings, countries, languages, numbers 0 to 20"
+    speaking: "Listen only. Ask them to say 10 words slowly; you repeat"
+    saturday: "Spell your name and city aloud (record it), write 5 sentences about yourself"
+  - week: 2
+    phase: A1
+    grammar: "Regular verb endings in present tense. haben. W-questions (wer, was, wo, woher, wie) and yes/no questions. Numbers to 100, telling the time"
+    vocab: "Family, professions, time of day"
+    speaking: "Ask 3 questions about their job and family; answer theirs"
+    saturday: "Fill in a registration form (name, address, date of birth, nationality). Read a short notice and answer 3 questions"
+  - week: 3
+    phase: A1
+    grammar: "Noun gender and the three articles. Indefinite article. Plural patterns (-e, -en, -er, -s, umlaut). Negation with nicht and kein"
+    vocab: "Objects in the office and home, colours, adjectives for size"
+    speaking: "German-only rule starts: 5 minutes a day, they correct you"
+    saturday: "Write a 30-word message describing your desk or room"
+  - week: 4
+    phase: A1
+    grammar: "Akkusativ: articles and pronouns. es gibt. Possessive articles (mein, dein, sein, ihr, unser). Verbs that take Akkusativ"
+    vocab: "Food, drink, shopping, prices, units"
+    speaking: "Buy something from them in a role play. Ask what they eat for breakfast"
+    saturday: "Short dialogue in a shop or café (reading). Write a 30-word message inviting someone for lunch"
+  - week: 5
+    phase: A1
+    grammar: "Modal verbs: können, müssen, wollen, möchten, dürfen. Sentence bracket (Satzklammer). Separable verbs (aufstehen, anrufen, einkaufen)"
+    vocab: "Daily routine, days, months, seasons, time expressions"
+    speaking: "Describe your day from waking up to sleeping"
+    saturday: "Read a weekly schedule and answer questions. Write a 30-word message about your week"
+  - week: 6
+    phase: A1
+    grammar: "Dativ: articles and pronouns. Prepositions with Dativ (aus, bei, mit, nach, seit, von, zu). Wo? versus Wohin? first look"
+    vocab: "City, buildings, directions, transport"
+    speaking: "Give directions from the office to a landmark"
+    saturday: "Read 3 signs and match them to situations. Write a 30-word message asking for directions"
+  - week: 7
+    phase: A1
+    grammar: "Perfekt with haben and sein. Partizip II: regular (ge-t) and 25 common irregular verbs. Time sequence words (zuerst, dann, danach)"
+    vocab: "Weekend, free time, hobbies, weather"
+    speaking: "Tell them what you did last weekend, 2 minutes"
+    saturday: "Write a 40-word message about your weekend"
+  - week: 8
+    phase: A1
+    grammar: "Imperative (du, ihr, Sie). Two-way prepositions with Wo? (Dativ) and Wohin? (Akkusativ). Time prepositions (am, um, im, von bis)"
+    vocab: "Appointments, health, body parts, at the doctor"
+    speaking: "Phone role play: make and change an appointment"
+    saturday: "Read an email about an appointment and answer questions. Write a 40-word message cancelling an appointment"
+  - week: 9
+    phase: A1
+    grammar: "Review week. Goethe A1 exam format: Lesen 3 parts, Hören 3 parts, Schreiben form plus 30-word message, Sprechen introduce yourself, ask and answer, make requests"
+    vocab: "Review all themes. Fill gaps in Anki"
+    speaking: "Full A1 speaking simulation with coworker, 15 minutes"
+    saturday: "Checkpoint: Goethe A1 Modellsatz, all four modules, timed. Target 80%"
+    checkpoint: "Goethe A1 Modellsatz, target 80%"
+  - week: 10
+    phase: A2
+    grammar: "Subordinate clauses: weil, dass, wenn, ob. Verb goes to the end. Comma rules"
+    vocab: "Opinions, feelings, reasons"
+    speaking: "Give a reason for 10 things you did this week (weil)"
+    saturday: "Read a forum post and pick the correct statements. Write a 50-word message giving a reason you cannot come"
+  - week: 11
+    phase: A2
+    grammar: "Präteritum of sein, haben and modal verbs. Perfekt of separable and inseparable verbs. als versus wenn"
+    vocab: "Childhood, school, past jobs"
+    speaking: "Tell them about your school days, 3 minutes"
+    saturday: "Write a 60-word message about a past experience"
+  - week: 12
+    phase: A2
+    grammar: "Adjective endings after definite article. Comparative and superlative (schöner, am schönsten, besser, mehr)"
+    vocab: "Clothes, appearance, shopping, comparing products"
+    speaking: "Compare two phones, two cities, two foods"
+    saturday: "Read a product comparison and answer. Write a 60-word message recommending one option over another"
+  - week: 13
+    phase: A2
+    grammar: "Adjective endings after indefinite article and without article. Demonstratives dieser, jener"
+    vocab: "Housing, furniture, flat search, Wohnungsanzeige vocabulary"
+    speaking: "Describe your home in detail"
+    saturday: "Read 4 flat adverts and match to people. Write a 60-word email to a landlord asking 3 questions"
+  - week: 14
+    phase: A2
+    grammar: "Reflexive verbs (sich freuen, sich interessieren, sich ärgern). Verbs with fixed prepositions, part 1 (warten auf, denken an, sich freuen über)"
+    vocab: "Health, sport, body, feelings"
+    speaking: "Tell them what you look forward to and what annoys you"
+    saturday: "Write a 60-word message to a colleague about a health problem and a changed plan"
+  - week: 15
+    phase: A2
+    grammar: "Konjunktiv II of haben, sein, werden, können (hätte, wäre, würde, könnte) for polite requests and wishes. Indirect questions"
+    vocab: "Work, office tasks, polite requests"
+    speaking: "Make 5 polite requests at work in German"
+    saturday: "Formal register starts: write a 60-word formal email to a company asking for information"
+  - week: 16
+    phase: A2
+    grammar: "Genitiv: articles, -s and -es, prepositions wegen, trotz, während. Relative clauses in Nominativ and Akkusativ"
+    vocab: "Travel, holidays, transport, hotel"
+    speaking: "Plan a trip together in German"
+    saturday: "Read a travel offer and a complaint. Write a 70-word hotel booking email"
+  - week: 17
+    phase: A2
+    grammar: "Future with werden. Passive in present (wird gemacht). Conjunctions deshalb, trotzdem, denn, sondern"
+    vocab: "News, environment, technology at a simple level"
+    speaking: "Explain what will change in your job in 5 years"
+    saturday: "Read a short news text. Write a 70-word opinion message with deshalb and trotzdem"
+  - week: 18
+    phase: A2
+    grammar: "Review week. Goethe A2 format: Lesen 4 parts, Hören 4 parts, Schreiben 2 messages (informal and semi-formal), Sprechen questions, describing, planning together"
+    vocab: "Review. Clean Anki: delete cards you always get right"
+    speaking: "Full A2 speaking simulation, 15 minutes, including planning something together"
+    saturday: "Checkpoint: Goethe A2 Modellsatz, all four modules, timed. Target 75%"
+    checkpoint: "Goethe A2 Modellsatz, target 75%"
+  - week: 19
+    phase: B1
+    grammar: "Relative clauses in Dativ and with prepositions. Plusquamperfekt. Temporal clauses: nachdem, bevor, während, seit, bis"
+    vocab: "Work life, careers, applications"
+    phrases: "Giving an opinion: Meiner Meinung nach, Ich bin der Ansicht, dass"
+    speaking: "Describe your career path, 3 minutes"
+    saturday: "Write an 80-word email to a colleague about a project"
+  - week: 20
+    phase: B1
+    grammar: "Konjunktiv II full: würde-form, hätte, wäre, irregular forms (käme, ginge, wüsste). Unreal conditions with wenn"
+    vocab: "Wishes, dreams, hypothetical situations"
+    phrases: "Agreeing and disagreeing: Da stimme ich zu, Das sehe ich anders"
+    speaking: "What would you do with a free year?"
+    saturday: "Read two opinion texts. Write an 80-word reply to one of them"
+  - week: 21
+    phase: B1
+    grammar: "Passive in all tenses. Passive with modal verbs. man as alternative. Verbs with fixed prepositions, part 2"
+    vocab: "Media, news, technology, social media"
+    phrases: "Contrasting: Einerseits, andererseits; Im Gegensatz dazu"
+    speaking: "Debate: is social media good or bad?"
+    saturday: "Write an 80-word forum post on a media topic"
+  - week: 22
+    phase: B1
+    grammar: "Infinitive clauses with zu, um zu, ohne zu, anstatt zu. damit versus um zu"
+    vocab: "Education, learning, the German school system"
+    phrases: "Giving reasons: Das liegt daran, dass; Der Grund dafür ist"
+    speaking: "Why are you learning German? Why do people change jobs?"
+    saturday: "Write a 90-word formal email of enquiry about a course"
+  - week: 23
+    phase: B1
+    grammar: "Noun-verb combinations (eine Entscheidung treffen, in Frage kommen). Word formation: prefixes and suffixes, compound nouns"
+    vocab: "Consumer life, money, advertising"
+    phrases: "Giving examples: Zum Beispiel, Ein Beispiel dafür ist"
+    speaking: "Explain how advertising influences you"
+    saturday: "Read an advertisement critically. Write a 90-word complaint email"
+  - week: 24
+    phase: B1
+    grammar: "Konjunktiv I and indirect speech (er sagte, er habe). Reporting what others say"
+    vocab: "Environment, climate, consumption"
+    phrases: "Summarising: Zusammenfassend lässt sich sagen"
+    speaking: "Report to them what a news story said"
+    saturday: "Listen to a DW slow news item. Write a 90-word summary and your opinion"
+  - week: 25
+    phase: B1
+    grammar: "Two-part conjunctions: sowohl als auch, weder noch, nicht nur sondern auch, je desto, zwar aber"
+    vocab: "Health, nutrition, stress, work-life balance"
+    phrases: "Weighing up: Dafür spricht, dagegen spricht"
+    speaking: "Weigh pros and cons of working from home"
+    saturday: "Write a 100-word forum post weighing two sides"
+  - week: 26
+    phase: B1
+    grammar: "Adjectives as nouns (der Deutsche, etwas Neues). Participles as adjectives (das lachende Kind, die geschlossene Tür)"
+    vocab: "Culture, festivals, traditions in Germany and India"
+    phrases: "Making a suggestion: Ich schlage vor, dass; Wie wäre es, wenn"
+    speaking: "Explain an Indian festival to them in German"
+    saturday: "Checkpoint light: Goethe B1 Modellsatz, Lesen and Hören only, timed"
+  - week: 27
+    phase: B1
+    grammar: "Switch to VHS Lernportal B1. Prepositions with Genitiv in writing (aufgrund, anhand, innerhalb, bezüglich). Nominal style versus verbal style"
+    vocab: "Society, living together, integration"
+    phrases: "Expressing uncertainty: Es könnte sein, dass; Vermutlich"
+    speaking: "Discuss a social issue from the news"
+    saturday: "Submit your first VHS Lernportal writing task to the tutor. Claude marks a 100-word forum post the same week"
+  - week: 28
+    phase: B1
+    grammar: "Modal verbs in subjective meaning (er soll reich sein, sie muss krank gewesen sein)"
+    vocab: "Crime, law, rules at work"
+    phrases: "Describing a graph or statistic: Die Grafik zeigt, Der Anteil liegt bei"
+    speaking: "Describe a simple statistic to them"
+    saturday: "Describe a statistic in 100 words, then give your opinion. First B2-style task"
+  - week: 29
+    phase: B1
+    grammar: "Review all B1 grammar with error log. Register: du versus Sie, informal versus formal vocabulary pairs"
+    vocab: "Review. Vocabulary from your weakest 3 themes"
+    phrases: "Opening and closing a formal letter: Sehr geehrte Damen und Herren, Mit freundlichen Grüßen, Ich wäre Ihnen dankbar, wenn"
+    speaking: "Full B1 speaking simulation: planning something together, presentation with 5 slides, discussion"
+    saturday: "Goethe B1 Schreiben Modellsatz: all 3 tasks, timed at 60 minutes"
+  - week: 30
+    phase: B1
+    grammar: "Goethe B1 format: Lesen 5 parts, Hören 4 parts, Schreiben 3 tasks, Sprechen 3 parts. Time management per module"
+    vocab: "Exam instruction vocabulary (Kreuzen Sie an, Ergänzen Sie, Begründen Sie)"
+    phrases: "Presenting: Ich möchte heute über das Thema sprechen; Zunächst, Anschließend, Abschließend"
+    speaking: "Record a 3-minute presentation on a given topic and send it to a coworker for feedback"
+    saturday: "Checkpoint: Goethe B1 Modellsatz, all four modules, timed. Target 70%"
+    checkpoint: "Goethe B1 Modellsatz, target 70%"
+  - week: 31
+    phase: B2
+    grammar: "Read the B2 marking criteria for Schreiben and Sprechen (Modellsatz page 46). Learn what Erfüllung, Kohärenz, Wortschatz, Strukturen mean in points"
+    vocab: "Work and career: Homeoffice, Work-Life-Balance, Bewerbung"
+    phrases: "Structuring a text: Zunächst, Darüber hinaus, Schließlich"
+    speaking: "Presentation: should companies allow Homeoffice?"
+    saturday: "Schreiben Task 1: 150-word forum post. Marked against the 4 criteria"
+  - week: 32
+    phase: B2
+    grammar: "Nominalisation and verbalisation (die Entscheidung treffen versus entscheiden). Written register for the formal message"
+    vocab: "Education: Studium versus Ausbildung, lifelong learning"
+    phrases: "Formal requests: Ich bitte Sie, ...; Ich wäre Ihnen sehr verbunden, wenn"
+    speaking: "Discussion: is a degree still worth it?"
+    saturday: "Schreiben Task 2: 100-word formal message to an employer or institution"
+  - week: 33
+    phase: B2
+    grammar: "Lesen Teil 1 strategy: matching people to texts, keywords and paraphrases. Reading speed"
+    vocab: "Media and digitalisation: soziale Medien, Fake News, Datenschutz"
+    phrases: "Citing sources: Laut einer Studie, Wie der Autor schreibt"
+    speaking: "Presentation: effects of social media on young people"
+    saturday: "Lesen Teil 1 and 2 from a free practice set, timed"
+  - week: 34
+    phase: B2
+    grammar: "Hören Teil 1 and 2 strategy: predicting from the question, note-taking symbols. Re-test Lesen/Hören with B1 Übungssatz if Week 30 was weak"
+    vocab: "Environment: Klimawandel, Nachhaltigkeit, Verkehr"
+    phrases: "Expressing consequence: Das hat zur Folge, dass; Dies führt dazu, dass"
+    speaking: "Discussion: should flights be taxed more?"
+    saturday: "Hören Teil 1 and 2 from a free practice set, played once, in another room on speakers"
+  - week: 35
+    phase: B2
+    grammar: "Sprechen Teil 1: presentation structure in 4 minutes (intro, situation in your country, pros and cons, your opinion, close). Timing"
+    vocab: "Health: Ernährung, Stress, Gesundheitssystem"
+    phrases: "Presenting a personal example: In meinem Heimatland; Aus eigener Erfahrung weiß ich"
+    speaking: "Deliver a full 4-minute presentation; coworker times it and asks 2 questions"
+    saturday: "Schreiben Task 1 on a health topic. Compare with Week 31 score"
+  - week: 36
+    phase: B2
+    grammar: "Sprechen Teil 2: discussion skills, taking a position, reacting to your partner, compromise phrases"
+    vocab: "Family and society: Rollenbilder, Generationen, Kinderbetreuung"
+    phrases: "Reacting: Da haben Sie recht, aber; Ich verstehe Ihren Punkt, dennoch"
+    speaking: "Full 5-minute discussion on a given statement with a coworker"
+    saturday: "Lesen Teil 3 and 4 (opinion texts, gap text)"
+  - week: 37
+    phase: B2
+    grammar: "Lesen Teil 3, 4 and 5: opinions, Lückentext with connectors, rules and regulations texts"
+    vocab: "Consumption and money: Werbung, Online-Shopping, Konsumverhalten"
+    phrases: "Expressing conditions: Vorausgesetzt, dass; Unter der Bedingung, dass"
+    speaking: "Presentation: is online shopping harmful for cities?"
+    saturday: "Schreiben Task 2: formal complaint"
+  - week: 38
+    phase: B2
+    grammar: "Hören Teil 3 and 4: long interview and lecture, multiple choice distractors"
+    vocab: "Culture and languages: Mehrsprachigkeit, Integration, Traditionen"
+    phrases: "Comparing: Im Vergleich zu; Während in Deutschland ..., ist es in Indien"
+    speaking: "Discussion: should children grow up with several languages?"
+    saturday: "Hören Teil 3 and 4, full set, timed"
+  - week: 39
+    phase: B2
+    grammar: "Mid-phase check: free B2 mock from a third-party source, all 4 modules across Saturday and Sunday"
+    vocab: "Review all 8 topics so far: one page of vocabulary each"
+    phrases: "Review the phrase bank: 80 phrases, test yourself"
+    speaking: "Any topic, coworker picks"
+    saturday: "Mock exam 1 (third-party set). Target 60% in each module"
+    checkpoint: "Third-party B2 mock, target 60% each module"
+  - week: 40
+    phase: B2
+    grammar: "Error log review: your 10 most frequent mistakes get one drill each this week. Common Indian-speaker errors: word order after weil, article gender, Dativ after mit and zu, false friends from English"
+    vocab: "Science and technology: Künstliche Intelligenz, Forschung, Zukunft der Arbeit"
+    phrases: "Speculating: Es ist denkbar, dass; Möglicherweise wird"
+    speaking: "Presentation: will AI take our jobs?"
+    saturday: "Schreiben Task 1 on a technology topic"
+  - week: 41
+    phase: B2
+    grammar: "Lesen full module (65 min) with time plan: Teil 1 10 min, Teil 2 15, Teil 3 12, Teil 4 10, Teil 5 8, transfer 10"
+    vocab: "Housing and city life: Wohnungsnot, Landleben versus Stadtleben, Mobilität"
+    phrases: "Expressing contrast: Dennoch, Allerdings, Hingegen"
+    speaking: "Discussion: is life in a big city better?"
+    saturday: "Lesen full module, timed, answer sheet transfer included"
+  - week: 42
+    phase: B2
+    grammar: "Hören full module (40 min). Practice on speakers with background noise"
+    vocab: "Travel and tourism: Massentourismus, Reisen und Umwelt"
+    phrases: "Expressing purpose: Mit dem Ziel; Zu diesem Zweck"
+    speaking: "Presentation: tourism in your region, benefits and problems"
+    saturday: "Hören full module, timed"
+  - week: 43
+    phase: B2
+    grammar: "Schreiben full module (75 min): time plan Task 1 45 min, Task 2 25 min, check 5 min. Checklist: all points covered, 3 connectors, 2 relative clauses, 1 Konjunktiv II, formal openings and closings correct"
+    vocab: "Sport and free time: Leistungssport, Ehrenamt, Freizeitstress"
+    phrases: "Concluding: Alles in allem; Abschließend lässt sich festhalten"
+    speaking: "Discussion: is competitive sport good for children?"
+    saturday: "Schreiben full module, timed"
+  - week: 44
+    phase: B2
+    grammar: "Sprechen full module with a coworker as partner and a second coworker or a recording as examiner. Preparation time 15 min as in the exam"
+    vocab: "Politics and participation at everyday level: Wahlen, Ehrenamt, Bürgerbeteiligung"
+    phrases: "Expressing opinion strongly or carefully: Ich bin fest davon überzeugt; Ich neige zu der Ansicht"
+    speaking: "Sprechen full simulation, recorded, 15 min"
+    saturday: "Review the recording with the marking criteria. Write down 5 fixes"
+  - week: 45
+    phase: B2
+    grammar: "Grammar clean-up: Konjunktiv I in reported speech, Partizipialkonstruktionen, Genitiv prepositions in formal writing"
+    vocab: "Work ethics and future: Vier-Tage-Woche, Gleichberechtigung, Rente"
+    phrases: "Review phrase bank, 120 phrases"
+    speaking: "Presentation on a surprise topic with 15 minutes preparation"
+    saturday: "Schreiben Task 1 and Task 2 back to back, 75 min"
+  - week: 46
+    phase: B2
+    grammar: "Review week. Rebuild the error log. Re-read the marking criteria. Final vocabulary push: Anki review of all cards marked hard"
+    vocab: "All 12 topics, one page each. Memorise 3 arguments for and against each"
+    phrases: "Full phrase bank test"
+    speaking: "Discussion on a surprise statement, 5 min"
+    saturday: "Mock exam 2 (third-party set), all four modules. Target 65%"
+    checkpoint: "Third-party B2 mock, target 65% each module"
+  - week: 47
+    phase: Prep
+    grammar: "One module a day: Mon Lesen, Tue Hören, Wed Schreiben, Thu Sprechen (recorded), Fri error review. All from third-party sets"
+    vocab: "Error log and the 12 topic vocabulary pages"
+    speaking: "Thursday Sprechen, recorded"
+    saturday: "Full written test: Schreiben both tasks, 75 min, marked against the criteria"
+  - week: 48
+    phase: Prep
+    grammar: "Same rotation, new third-party set. Hören always on speakers in another room"
+    vocab: "Error log and the 12 topic vocabulary pages"
+    speaking: "Sprechen full simulation with coworker, recorded, self-marked with criteria sheet"
+    saturday: "Sprechen full simulation with coworker, recorded, self-marked with criteria sheet"
+  - week: 49
+    phase: Prep
+    grammar: "Mon to Thu: official Goethe B2 Modellsatz, one module a day, strict timing. Fri: full review of every mistake, written into the error log"
+    vocab: "Error log"
+    speaking: "Modellsatz Sprechen, timed"
+    saturday: "Schreiben: rewrite both Modellsatz tasks from scratch without looking at your first attempt"
+    checkpoint: "Official Goethe B2 Modellsatz, target 70%"
+  - week: 50
+    phase: Prep
+    grammar: "Weakest module gets 3 days, the other three get 1 day each. Decide from the Week 49 scores"
+    vocab: "Error log and the 12 topic vocabulary pages"
+    speaking: "Weakest module focus"
+    saturday: "Full written test, new topics from the 12-topic list"
+  - week: 51
+    phase: Prep
+    grammar: "Mon to Thu: official Goethe B2 Übungssatz, one module a day, exam conditions. Fri: review"
+    vocab: "Error log"
+    speaking: "Final Sprechen simulation. Confirm exam logistics: venue, ID, arrival time, what to bring"
+    saturday: "Final Sprechen simulation. Confirm exam logistics"
+    checkpoint: "Official Goethe B2 Übungssatz, target 70%"
+  - week: 52
+    phase: Prep
+    grammar: "Mon to Wed: light review only, phrase bank, error log, one Hören text a day. Thu and Fri: nothing new, sleep well, pack ID and confirmation"
+    vocab: "Phrase bank, error log"
+    speaking: "None. Rest"
+    saturday: "Exam day or buffer"
+  - week: 53
+    phase: Prep
+    grammar: "Buffer week. Exam day falls in this window if not the week before"
+    vocab: "Phrase bank, error log"
+    speaking: "None. Rest"
+    saturday: "Exam day or buffer"
+quiz_design:
+  A1: "5 vocabulary (word to meaning, with article), 5 grammar (fill the gap), 3 sentence order, 2 listening-style (which reply fits). Examples: 'der, die or das: ___ Tisch', 'Ich ___ aus Indien (kommen)', put these 5 words in order"
+  A2: "4 vocabulary, 5 grammar, 3 reading micro-texts (2 sentences, one question), 3 register (formal or informal). Examples: 'Choose the correct adjective ending', 'Which sentence has the verb in the right place after weil?'"
+  B1: "3 vocabulary in context, 4 grammar transformations, 3 reading (short forum post), 3 phrase bank (which phrase fits this function), 2 error correction. Examples: 'Rewrite in Passiv', 'Which connector fits: trotzdem, deshalb or sondern', 'Find the mistake in this sentence'"
+  B2: "3 vocabulary (paraphrase, synonyms), 3 Lesen-style items (paraphrase matching, as in Teil 1), 3 nominal-verbal transformations, 3 phrase bank, 3 from the learner's own error log. Examples: 'Which statement matches the text?', 'Express this with a Nomen-Verb-Verbindung', 'Formal or informal: which closing fits?'"
+  Prep: "15 questions drawn only from the learner's error log and the 12 topic vocabulary pages. The learner's own mistakes, reworded"
+written_design:
+  A1: "One reading task (notice, short email, 5 items) plus one writing task (form or 30 to 40 word message). Marking: task done, understandable, basic word order and verb endings. 30 minutes"
+  A2: "One reading task (adverts or short texts, 5 items) plus one writing task (60 to 70 words, informal or semi-formal). Marking: task points covered, connectors, adjective endings, cases. 30 minutes"
+  B1: "One reading or listening task plus one writing task (80 to 100 words, forum post or formal email). Every fourth week a statistic description. Marking: Goethe B1 Schreiben criteria Erfüllung, Kohärenz, Wortschatz, Strukturen, each 0 to 5. 45 minutes"
+  B2: "One full B2 task type per week as listed in the week's Saturday test. Lesen tasks timed with items; Schreiben tasks marked. Marking: Goethe B2 criteria scaled to 100; both Schreiben tasks together 60 plus 40 points. 75 minutes"
+  Prep: "Schreiben both tasks (150-word forum post, 60 points; 100-word formal message, 40 points), 75 minutes, marked against the Goethe B2 criteria"
+discussion_statements:
+  - "Homeoffice sollte für alle Büroangestellten ein Recht sein."
+  - "Soziale Medien schaden Jugendlichen mehr, als sie nutzen."
+  - "Inlandsflüge sollten verboten werden."
+  - "Ein Studium ist heute nicht mehr nötig für eine gute Karriere."
+  - "Kinder sollten so früh wie möglich mehrere Sprachen lernen."
+  - "Online-Shopping zerstört die Innenstädte."
+  - "Fleischkonsum sollte stärker besteuert werden."
+  - "Künstliche Intelligenz wird mehr Arbeitsplätze schaffen als vernichten."
+  - "Das Leben auf dem Land ist besser als in der Großstadt."
+  - "Massentourismus sollte durch hohe Gebühren begrenzt werden."
+  - "Leistungssport ist für Kinder ungesund."
+  - "Die Vier-Tage-Woche sollte Standard werden."
+  - "Ehrenamtliche Arbeit sollte in der Schule Pflicht sein."
+  - "Autos sollten aus Stadtzentren verbannt werden."
+  - "Prüfungen und Noten sollten in der Schule abgeschafft werden."
+  - "Jeder sollte ein Jahr im Ausland verbringen."

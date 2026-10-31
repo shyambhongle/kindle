@@ -1,0 +1,80 @@
+{{define "content"}}
+{{$d := .Data}}
+<div class="row between" style="margin-bottom:18px">
+  <h1 style="margin:0">Tasks</h1>
+  <div class="row">
+    {{if $d.Synced.IsZero}}<span class="muted small">never synced</span>{{else}}<span class="muted small">synced {{dt $d.Synced}}</span>{{end}}
+    {{if eq $d.Status "live"}}<span class="badge ok">Notion live</span>{{else if eq $d.Status "mock"}}<span class="badge">dummy data</span>{{else if $d.Status}}<span class="badge err">sync error</span>{{end}}
+    <form method="post" action="/admin/tasks/sync"><button class="primary">Sync now</button></form>
+  </div>
+</div>
+
+{{if not $d.Configured}}
+<div class="card"><p><strong>Notion is not configured.</strong> Put <code>NOTION_TOKEN</code> and <code>NOTION_TASKS_DB</code> in <code>.env</code>, restart, then Sync now. Until then these are dummy tasks.</p></div>
+{{else if $d.Mock}}
+<div class="card"><p><code>MOCK=true</code> is set, so dummy tasks are shown instead of your board.</p></div>
+{{end}}
+{{if and $d.Status (ne $d.Status "live") (ne $d.Status "mock")}}
+<div class="flash err">{{$d.Status}}</div>
+{{end}}
+{{if $d.WriteError}}
+<div class="flash err">Last write to Notion failed: {{$d.WriteError}}. The Kindle and this page show the new status, Notion does not. Fix the cause and change it in Notion by hand, or sync to restore Notion's view.</div>
+{{end}}
+
+<p class="muted">Notion is the source of truth. Edit, add and reorder tasks there. This page shows what was synced and how it reaches the Kindle. The only write back is the status change when you mark a task done.</p>
+
+<div class="grid c4">
+{{range $d.Columns}}
+<div class="card tight">
+  <div class="row between"><h2 style="margin:0">{{.Status}}</h2><span class="badge">{{len .Tasks}}</span></div>
+  <p class="muted small" style="margin:4px 0 10px">{{.Label}}</p>
+  {{range .Tasks}}
+  <div style="padding:8px 0;border-top:1px solid var(--border)">
+    <div class="row between" style="align-items:flex-start">
+      <div>{{if .URL}}<a href="{{.URL}}" target="_blank" rel="noopener" style="text-decoration:none">{{.Title}}</a>{{else}}{{.Title}}{{end}}
+        <div class="muted small">{{if .Due}}due {{.Due}}{{end}}{{if .Project}} · {{.Project}}{{end}}{{if .EstimateMin}} · ~{{.EstimateMin}} min{{end}}</div>
+        {{if .NextStep}}<div class="muted small">Next: {{.NextStep}}</div>{{end}}
+      </div>
+      <form method="post" action="/admin/tasks/{{.ID}}/done" class="inline">
+        <input type="hidden" name="done" value="{{if .Done}}0{{else}}1{{end}}">
+        <button class="sm" title="{{if .Done}}Undo (restore previous status){{else}}Mark done in Notion{{end}}">{{if .Done}}undo{{else}}done{{end}}</button>
+      </form>
+    </div>
+  </div>
+  {{else}}<p class="muted small">none</p>{{end}}
+</div>
+{{end}}
+</div>
+
+<div class="grid c2">
+  <div class="card">
+    <h2>Status mapping</h2>
+    <table>
+      <tr><th>Board status</th><th>On the Kindle</th><th>.env</th></tr>
+      <tr><td><strong>{{$d.Mapping.Top}}</strong></td><td>Top 3 (first three by due date, then board order)</td><td class="mono">NOTION_STATUS_TOP</td></tr>
+      <tr><td><strong>{{$d.Mapping.Next}}</strong></td><td>Listed under the Top 3</td><td class="mono">NOTION_STATUS_NEXT</td></tr>
+      <tr><td><strong>{{$d.Mapping.Backlog}}</strong></td><td>Counted only</td><td class="mono">NOTION_STATUS_BACKLOG</td></tr>
+      <tr><td><strong>{{$d.Mapping.Hidden}}</strong></td><td>Ignored</td><td class="mono">NOTION_STATUS_HIDDEN</td></tr>
+      <tr><td><strong>{{$d.Mapping.Done}}</strong></td><td>Done today (if edited today)</td><td class="mono">NOTION_STATUS_DONE</td></tr>
+    </table>
+    {{if $d.Unmapped}}<p class="small" style="margin-top:10px"><span class="badge warn">unmapped</span> These board statuses are not in the mapping and are treated as backlog: {{join $d.Unmapped ", "}}</p>{{end}}
+    <p class="muted small" style="margin-top:10px">Tapping done on the Kindle sets the status to "{{$d.Mapping.Done}}"; undo restores the status the task had before.</p>
+  </div>
+  <div class="card">
+    <h2>Board schema</h2>
+    {{with $d.Schema}}
+    <p><strong>{{.Title}}</strong></p>
+    <table>
+      <tr><td>Title property</td><td class="mono">{{.TitleProp}}</td></tr>
+      <tr><td>Status property</td><td class="mono">{{.StatusProp}}</td></tr>
+      <tr><td>Status options</td><td>{{join .Options ", "}}</td></tr>
+      <tr><td>Due date</td><td class="mono">{{if .Due}}{{.Due}}{{else}}<span class="muted">not found</span>{{end}}</td></tr>
+      <tr><td>Project</td><td class="mono">{{if .Project}}{{.Project}}{{else}}<span class="muted">not found</span>{{end}}</td></tr>
+      <tr><td>Estimate (min)</td><td class="mono">{{if .Estimate}}{{.Estimate}}{{else}}<span class="muted">not found</span>{{end}}</td></tr>
+      <tr><td>Next step</td><td class="mono">{{if .NextStep}}{{.NextStep}}{{else}}<span class="muted">not found</span>{{end}}</td></tr>
+    </table>
+    <p class="muted small" style="margin-top:10px">Optional properties are picked up by name: a date called "Due", a select or text called "Project", a number called "Estimate", a text called "Next step". Add them to the board if you want them on the Kindle.</p>
+    {{else}}<p class="muted">Schema appears here after the first successful sync. Run <code>./dashboard notion-inspect</code> in a terminal to see it now.</p>{{end}}
+  </div>
+</div>
+{{end}}

@@ -1,0 +1,61 @@
+{{define "content"}}
+{{$d := .Data}}
+<div class="row between" style="margin-bottom:18px">
+  <h1 style="margin:0">German</h1>
+  <span class="badge {{if $d.Due}}warn{{else}}ok{{end}}">{{$d.Due}} words due today</span>
+</div>
+
+<div class="grid c2">
+<div>
+<div class="card">
+  <h2>Words ({{len $d.Words}})</h2>
+  <table>
+    <tr><th>German</th><th>English</th><th>Review</th><th></th></tr>
+    {{range $d.Words}}
+    <tr class="{{if .IsDue}}due{{end}}">
+      <td><strong>{{.DE}}</strong></td><td>{{.EN}}</td>
+      <td class="small">{{if .Due}}due {{ptrdate .Due}}<div class="muted">every {{.Interval}} d · {{.Reviewed}}x</div>{{end}}</td>
+      <td style="white-space:nowrap;text-align:right"><a class="btn sm" href="/admin/german?edit={{.ID}}">edit</a>
+        <form method="post" action="/admin/german/{{.ID}}/delete" class="inline"><button class="sm danger">delete</button></form></td>
+    </tr>
+    {{else}}<tr><td colspan="4" class="muted">No words yet.</td></tr>{{end}}
+  </table>
+</div>
+<div class="card">
+  <h2>Sentences ({{len $d.Sentences}})</h2>
+  <p class="muted small">One of these is the "sentence of the day" on the Kindle, rotating daily.</p>
+  <table>
+    {{range $d.Sentences}}
+    <tr><td><strong>{{.DE}}</strong><div class="muted">{{.EN}}</div></td>
+      <td style="white-space:nowrap;text-align:right"><a class="btn sm" href="/admin/german?edit={{.ID}}">edit</a>
+        <form method="post" action="/admin/german/{{.ID}}/delete" class="inline"><button class="sm danger">delete</button></form></td></tr>
+    {{else}}<tr><td class="muted">No sentences yet.</td></tr>{{end}}
+  </table>
+</div>
+</div>
+
+<div>
+<div class="card">
+  <h2>{{if $d.Edit}}Edit{{else}}Add{{end}}</h2>
+  <form method="post" action="/admin/german">
+    {{if $d.Edit}}<input type="hidden" name="id" value="{{$d.Edit.ID}}">{{end}}
+    <div class="field"><label>Type</label><select name="kind">
+      <option value="word" {{if and $d.Edit (eq $d.Edit.Kind "word")}}selected{{end}}>word (reviewed with spaced repetition)</option>
+      <option value="sentence" {{if and $d.Edit (eq $d.Edit.Kind "sentence")}}selected{{end}}>sentence of the day</option></select></div>
+    <div class="field"><label>German</label><input type="text" name="de" value="{{if $d.Edit}}{{$d.Edit.DE}}{{end}}" required></div>
+    <div class="field"><label>English</label><input type="text" name="en" value="{{if $d.Edit}}{{$d.Edit.EN}}{{end}}" required></div>
+    <div class="row"><button class="primary">Save</button>{{if $d.Edit}}<a class="btn" href="/admin/german">Cancel</a>{{end}}</div>
+  </form>
+</div>
+<div class="card">
+  <h2>Import CSV</h2>
+  <p class="muted small">Columns: <code>de,en</code>. Header row optional.</p>
+  <form method="post" action="/admin/german/import">
+    <div class="field"><label>Import as</label><select name="kind"><option value="word">words</option><option value="sentence">sentences</option></select></div>
+    <div class="field"><textarea name="csv" rows="6" placeholder="die Wurzel,the root"></textarea></div>
+    <button>Import</button>
+  </form>
+</div>
+</div>
+</div>
+{{end}}

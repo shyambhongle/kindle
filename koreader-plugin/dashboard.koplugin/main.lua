@@ -107,7 +107,7 @@ function DashboardView:init()
         TapView = { GestureRange:new{ ges = "tap", range = self.dimen } },
         HoldView = { GestureRange:new{ ges = "hold", range = self.dimen } },
     }
-    self.state = self.state or { page = "home", dayOffset = 0, refreshCount = 0, showNews = true }
+    self.state = self.state or { page = "home", dayOffset = 0, refreshCount = 0, readerPage = 1 }
 end
 
 function DashboardView:face(kind, bold, sizePx)
@@ -175,6 +175,7 @@ end
 function DashboardView:onHoldView()
     -- long press anywhere: back to home, or exit from home
     if self.state.page ~= "home" then
+        self.state.readerPage = 1
         self.state.page = "home"
         self:refreshScreen("full")
     else
@@ -189,6 +190,11 @@ function DashboardView:doAction(a)
     elseif a.type == "nav" then
         self.state.page = a.page
         if a.offset then self.state.dayOffset = a.offset end
+        self.state.readerPage = 1
+        self:refreshScreen("full")
+    elseif a.type == "reader" then
+        -- long text: a full refresh per page turn, the same as turning a page in a book
+        self.state.readerPage = math.max(1, (self.state.readerPage or 1) + (a.delta or 1))
         self:refreshScreen("full")
     elseif a.type == "day" then
         self.state.dayOffset = (self.state.dayOffset or 0) + a.delta
@@ -208,6 +214,10 @@ function DashboardView:doAction(a)
         end)
     elseif a.type == "guitar_advance" then
         self:post("/practice/guitar/advance", { delta = a.delta or 1 }, nil)
+    elseif a.type == "english_done" then
+        self:post("/english/" .. tostring(a.day) .. "/done", { part = a.part, done = a.done }, nil)
+    elseif a.type == "summary_read" then
+        self:post("/summaries/" .. tostring(a.id) .. "/read", { done = a.done }, nil)
     end
 end
 
@@ -340,7 +350,7 @@ function Dashboard:open()
         end
         local view = DashboardView:new{
             url = url,
-            state = { page = "home", dayOffset = 0, refreshCount = 0, showNews = true },
+            state = { page = "home", dayOffset = 0, refreshCount = 0, readerPage = 1 },
         }
         view.on_close = function()
             if rotate and Screen:getRotationMode() ~= old_mode then

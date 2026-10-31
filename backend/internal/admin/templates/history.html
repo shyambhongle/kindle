@@ -1,0 +1,37 @@
+{{define "content"}}
+{{$d := .Data}}
+<h1>History</h1>
+
+<div class="card">
+  <div class="row between"><h2>Practice, last 12 weeks</h2>
+    <div class="row small muted">{{range $d.Keys}}<span>{{.}}: <strong>{{index $d.Totals .}}</strong></span>{{end}}</div></div>
+  <div class="heat">
+    <div></div><div class="muted small">Mon</div><div class="muted small">Tue</div><div class="muted small">Wed</div><div class="muted small">Thu</div><div class="muted small">Fri</div><div class="muted small">Sat</div><div class="muted small">Sun</div>
+    {{range $d.Weeks}}
+      <div class="muted small">{{date .Start}}</div>
+      {{range .Days}}
+        <div class="cell {{if .Future}}future{{else if eq .Count 1}}l1{{else if eq .Count 2}}l2{{else if eq .Count 3}}l3{{else if ge .Count 4}}l4{{end}}" title="{{date .Date}}: {{range $k, $v := .Done}}{{$k}} {{end}}">{{if not .Future}}{{if .Count}}{{.Count}}{{end}}{{end}}</div>
+      {{end}}
+    {{end}}
+  </div>
+  <p class="muted small" style="margin-top:10px">A cell shows how many of the four practices (guitar, German, English vocab, reading) you did that day. Hover for which ones.</p>
+</div>
+
+<div class="grid c2">
+  <div>
+    <div class="card">
+      <h2>Book summaries read</h2>
+      <table>
+        {{range $d.Finished}}<tr><td><a href="/admin/books?id={{.ID}}"><strong>{{.Title}}</strong></a> <span class="muted">{{.Author}}</span></td><td class="muted small">{{if .FinishedOn}}{{ptrdate .FinishedOn}}{{end}}</td></tr>{{else}}<tr><td class="muted">None yet.</td></tr>{{end}}
+      </table>
+    </div>
+    <div class="card">
+      <h2>Collector runs</h2>
+      <table>
+        {{range $d.Runs}}<tr><td>{{dt .Started}}</td><td>{{if .OK}}<span class="badge ok">ok</span>{{else}}<span class="badge warn">partial</span>{{end}}</td>
+          <td class="small muted">{{range $k, $v := .Status}}{{if ne $v "live"}}{{$k}}: {{$v}}<br>{{end}}{{end}}</td></tr>{{else}}<tr><td class="muted">No runs yet.</td></tr>{{end}}
+      </table>
+    </div>
+  </div>
+</div>
+{{end}}

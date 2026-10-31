@@ -1,0 +1,96 @@
+{{define "content"}}
+{{$d := .Data}}
+<div class="row between" style="margin-bottom:18px">
+  <h1 style="margin:0">Overview</h1>
+  <div class="row">
+    <form method="post" action="/admin/collect"><button class="primary">Collect now</button></form>
+    <form method="post" action="/admin/backup"><button>Backup now</button></form>
+  </div>
+</div>
+
+{{if $d.Dash}}
+<div class="grid c4">
+  <div class="card stat"><span class="v">{{$d.Open}}</span><span class="k">open tasks</span></div>
+  <div class="card stat"><span class="v">{{$d.DoneToday}}</span><span class="k">done today</span></div>
+  <div class="card stat"><span class="v">{{add $d.Dash.Practice.German.DueReviews $d.Dash.Practice.Vocab.DueReviews}}</span><span class="k">reviews due (German + English)</span></div>
+  <div class="card stat"><a href="/admin/news" style="text-decoration:none"><span class="v" {{if $d.Alerts}}style="color:var(--err)"{{end}}>{{$d.Alerts}}</span><span class="k" style="display:block">security alerts, last 3 days</span></a></div>
+</div>
+
+<div class="grid c2">
+  <div class="card">
+    <h2>Top 3 today</h2>
+    <table>
+      {{range $d.Dash.Tasks}}{{if .Top}}
+      <tr><td style="width:24px">{{if .Done}}✓{{else}}○{{end}}</td><td>{{.Title}}<div class="muted small">{{.Project}}{{if .NextStep}} · Next: {{.NextStep}}{{end}}</div></td></tr>
+      {{end}}{{end}}
+    </table>
+    <p class="muted small" style="margin-top:10px">Tasks come from Notion (or dummy data until the token is set). Edit them in Notion.</p>
+  </div>
+  <div class="card">
+    <h2>Practice this week</h2>
+    <table>
+      <tr><th></th>{{range $d.Week}}<th style="text-align:center">{{.Label}}{{if .Today}} *{{end}}</th>{{end}}<th></th></tr>
+      <tr><td>Guitar</td>{{range $d.Week}}<td style="text-align:center">{{if .Guitar}}●{{else}}·{{end}}</td>{{end}}
+        <td><form method="post" action="/admin/practice/guitar" class="inline"><input type="hidden" name="done" value="{{if $d.Dash.Practice.Guitar.DoneToday}}0{{else}}1{{end}}"><button class="sm">{{if $d.Dash.Practice.Guitar.DoneToday}}Undo today{{else}}Done today{{end}}</button></form></td></tr>
+      <tr><td>German</td>{{range $d.Week}}<td style="text-align:center">{{if .German}}●{{else}}·{{end}}</td>{{end}}
+        <td><form method="post" action="/admin/practice/german" class="inline"><input type="hidden" name="done" value="{{if $d.Dash.Practice.German.DoneToday}}0{{else}}1{{end}}"><button class="sm">{{if $d.Dash.Practice.German.DoneToday}}Undo today{{else}}Done today{{end}}</button></form></td></tr>
+      <tr><td>English vocab</td>{{range $d.Week}}<td style="text-align:center">{{if .Vocab}}●{{else}}·{{end}}</td>{{end}}
+        <td><form method="post" action="/admin/practice/vocab" class="inline"><input type="hidden" name="done" value="{{if $d.Dash.Practice.Vocab.DoneToday}}0{{else}}1{{end}}"><button class="sm">{{if $d.Dash.Practice.Vocab.DoneToday}}Undo today{{else}}Done today{{end}}</button></form></td></tr>
+      <tr><td>Reading</td>{{range $d.Week}}<td style="text-align:center">{{if .Reading}}●{{else}}·{{end}}</td>{{end}}
+        <td><a class="btn sm" href="/admin/books">Today's summary</a></td></tr>
+    </table>
+    <p class="muted small" style="margin-top:10px">Marking German or English done pushes today's due reviews forward (1, 2, 4, 8 ... days).</p>
+  </div>
+</div>
+
+<div class="grid c3">
+  <div class="card">
+    <h2>Guitar</h2>
+    <p><strong>{{$d.Dash.Practice.Guitar.Current}}</strong></p>
+    <p class="muted">{{$d.Dash.Practice.Guitar.Today}}</p>
+    <a class="btn sm" href="/admin/guitar">Open plan</a>
+  </div>
+  <div class="card">
+    <h2>Today's book</h2>
+    {{with $d.Dash.Practice.Reading.Book}}{{if .Title}}
+    <p><strong>{{.Title}}</strong><br><span class="muted">{{.Author}}</span></p>
+    <div class="bar"><div style="width:{{pct .Page .Pages}}%"></div></div>
+    <p class="muted small" style="margin-top:6px">day {{.Page}} of {{.Pages}}{{if $d.Dash.Practice.Reading.DoneToday}} · read{{end}}</p>
+    {{else}}<p class="muted">No book scheduled today.</p>{{end}}{{end}}
+    <a class="btn sm" href="/admin/books">Open summary</a>
+  </div>
+  <div class="card">
+    <h2>Next up</h2>
+    {{with $d.Next}}
+    <p><strong>{{.Title}}</strong><br><span class="muted">{{dt .Start}}{{if .Location}} · {{.Location}}{{end}}</span></p>
+    {{else}}<p class="muted">Nothing upcoming in the cache.</p>{{end}}
+    <p class="muted small">{{len $d.Dash.Events}} events cached · calendar: {{index $d.Dash.Sources "calendar"}}</p>
+  </div>
+</div>
+{{else}}
+<div class="card"><p>No snapshot yet. Click "Collect now".</p></div>
+{{end}}
+
+<div class="grid c2">
+  <div class="card">
+    <h2>Sources</h2>
+    <table>
+      <tr><th>Source</th><th>Status</th></tr>
+      {{if $d.Dash}}{{range $k, $v := $d.Dash.Sources}}
+      <tr><td>{{$k}}</td><td>{{if eq $v "live"}}<span class="badge ok">live</span>{{else if eq $v "mock"}}<span class="badge">dummy data</span>{{else}}<span class="badge err">error</span> <span class="small muted">{{$v}}</span>{{end}}</td></tr>
+      {{end}}{{end}}
+    </table>
+    <h3 style="margin-top:16px">Last collector runs</h3>
+    <table>
+      {{range $d.LastRuns}}<tr><td>{{dt .Started}}</td><td>{{if .OK}}<span class="badge ok">ok</span>{{else}}<span class="badge warn">partial</span>{{end}}</td></tr>{{end}}
+    </table>
+  </div>
+  <div class="card">
+    <h2>Kindle</h2>
+    <p class="muted small">Backend URL for the KOReader plugin (replace &lt;mac-ip&gt; with your Mac's LAN address):</p>
+    <code class="block">{{$d.KindleURL}}</code>
+    <h3 style="margin-top:16px">Backups</h3>
+    {{if $d.Backups}}<ul class="plain small mono">{{range $i, $b := $d.Backups}}{{if lt $i 5}}<li>{{$b}}</li>{{end}}{{end}}</ul>{{else}}<p class="muted small">No backups yet.</p>{{end}}
+  </div>
+</div>
+{{end}}

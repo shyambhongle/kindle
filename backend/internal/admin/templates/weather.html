@@ -1,0 +1,75 @@
+{{define "content"}}
+{{$d := .Data}}
+<div class="row between" style="margin-bottom:18px">
+  <h1 style="margin:0">Weather</h1>
+  <div class="row">
+    {{if eq $d.Status "live"}}<span class="badge ok">Open-Meteo live</span>{{else if eq $d.Status "mock"}}<span class="badge">dummy data</span>{{else if $d.Status}}<span class="badge warn">{{$d.Status}}</span>{{end}}
+    <form method="post" action="/admin/weather/refresh"><button class="primary">Refresh</button></form>
+  </div>
+</div>
+<p class="muted">Home is what the Kindle's top bar shows. Tapping it on the Kindle opens the 7 day forecast for every place here. Up to five places.</p>
+
+{{range $d.Forecasts}}
+<div class="card">
+  <div class="row between">
+    <div>
+      <strong>{{.Place.Name}}</strong> <span class="muted">{{.Place.Label}}</span>
+      {{if .Place.Home}}<span class="badge ok">home</span>{{end}}
+      {{if .Error}}<span class="badge err" title="{{.Error}}">fetch failed, showing placeholder</span>{{end}}
+    </div>
+    <div class="row">
+      <span class="muted small">{{round .Current.TempC}}° {{.Current.Summary}} · humidity {{.Current.Humidity}}% · wind {{round .Current.WindKmh}} km/h · fetched {{dt .FetchedAt}}</span>
+      {{if not .Place.Home}}
+      <form method="post" action="/admin/weather/places/{{.Place.ID}}/home" class="inline"><button class="sm">Make home</button></form>
+      <form method="post" action="/admin/weather/places/{{.Place.ID}}/delete" class="inline" onsubmit="return confirm('Remove {{.Place.Name}}?')"><button class="sm danger">Remove</button></form>
+      {{end}}
+    </div>
+  </div>
+  <table style="margin-top:10px">
+    <tr>{{range .Days}}<th style="text-align:center">{{if eq .Date $d.Today}}Today{{else}}{{dayname .Date}}{{end}}</th>{{end}}</tr>
+    <tr>{{range .Days}}<td style="text-align:center"><strong>{{round .HiC}}°</strong> <span class="muted">{{round .LoC}}°</span></td>{{end}}</tr>
+    <tr>{{range .Days}}<td style="text-align:center">{{.Summary}}</td>{{end}}</tr>
+    <tr>{{range .Days}}<td style="text-align:center" class="muted small">{{if ge .RainPct 30}}rain {{.RainPct}}%{{else}}&nbsp;{{end}}</td>{{end}}</tr>
+  </table>
+</div>
+{{else}}
+<div class="card"><p class="muted">No forecasts yet. Click Refresh.</p></div>
+{{end}}
+
+{{if $d.CanAdd}}
+<div class="grid c2">
+  <div class="card">
+    <h2>Add a place</h2>
+    <form method="get" action="/admin/weather">
+      <div class="field"><label>Search a city or town</label><input type="text" name="q" value="{{$d.Query}}" placeholder="Nagpur" autofocus></div>
+      <button>Search</button>
+    </form>
+    {{if $d.SearchErr}}<p class="small" style="margin-top:10px;color:var(--err)">{{$d.SearchErr}}</p>{{end}}
+    {{if $d.Results}}
+    <table style="margin-top:12px">
+      {{range $d.Results}}
+      <tr><td>{{.Label}}<div class="muted small mono">{{printf "%.4f, %.4f" .Lat .Lon}}</div></td>
+        <td style="text-align:right"><form method="post" action="/admin/weather/places" class="inline">
+          <input type="hidden" name="name" value="{{.Name}}"><input type="hidden" name="label" value="{{.Label}}">
+          <input type="hidden" name="lat" value="{{.Lat}}"><input type="hidden" name="lon" value="{{.Lon}}"><input type="hidden" name="timezone" value="{{.Timezone}}">
+          <button class="sm primary">Add</button></form></td></tr>
+      {{end}}
+    </table>
+    {{end}}
+  </div>
+  <div class="card">
+    <h2>Or enter coordinates</h2>
+    <form method="post" action="/admin/weather/places">
+      <div class="field"><label>Name</label><input type="text" name="name" required></div>
+      <div class="fields">
+        <div><label>Latitude</label><input type="text" name="lat" placeholder="18.5204" required></div>
+        <div><label>Longitude</label><input type="text" name="lon" placeholder="73.8567" required></div>
+      </div>
+      <button>Add place</button>
+    </form>
+  </div>
+</div>
+{{else}}
+<div class="card"><p class="muted">You follow five places, which is the maximum. Remove one to add another.</p></div>
+{{end}}
+{{end}}

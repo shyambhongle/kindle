@@ -6,11 +6,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"sort"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/shyam/dashboard/internal/config"
+	"github.com/shyam/dashboard/internal/english"
+	"github.com/shyam/dashboard/internal/german"
+	"github.com/shyam/dashboard/internal/summaries"
 	"github.com/shyam/dashboard/internal/model"
 	"github.com/shyam/dashboard/internal/sources"
 )
@@ -21,17 +26,31 @@ type Collector struct {
 	Notion  *sources.Notion
 	cal     *sources.Calendar
 	weather *sources.Weather
-	mu      sync.Mutex // one collect/build at a time
+	Course  *german.Course   // set by main after construction
+	English *english.Service // set by main after construction
+	Summaries *summaries.Service // set by main after construction
+	mu      sync.Mutex     // one collect/build at a time
 }
 
 func New(cfg *config.Config, pool *pgxpool.Pool) *Collector {
-	return &Collector{
+	c := &Collector{
 		cfg:     cfg,
 		pool:    pool,
-		Notion:  sources.NewNotion(cfg.NotionToken, cfg.NotionTasksDB, cfg.Timezone),
+		Notion: sources.NewNotion(cfg.NotionToken, cfg.NotionTasksDB, cfg.Timezone, sources.StatusMapping{
+			Property: cfg.NotionStatus["property"], Top: cfg.NotionStatus["top"], Next: cfg.NotionStatus["next"],
+			Backlog: cfg.NotionStatus["backlog"], Hidden: cfg.NotionStatus["hidden"], Done: cfg.NotionStatus["done"],
+		}),
 		cal:     &sources.Calendar{URL: cfg.CalendarICSURL, TZ: cfg.Timezone},
-		weather: &sources.Weather{Lat: cfg.Latitude, Lon: cfg.Longitude, Location: cfg.WeatherLocation},
+		weather: sources.NewWeather(cfg.Timezone),
 	}
+	if cfg.NotionBaseURL != "" {
+		c.Notion.BaseURL = cfg.NotionBaseURL
+	}
+	if cfg.WeatherBaseURL != "" {
+		c.weather.BaseURL = cfg.WeatherBaseURL
+		c.weather.GeocodeURL = cfg.WeatherBaseURL
+	}
+	return c
 }
 
 func (c *Collector) today() time.Time {
@@ -47,23 +66,11 @@ func (c *Collector) Collect(ctx context.Context) error {
 	started := time.Now()
 
 	// tasks
-	if c.Notion.Configured() && !c.cfg.Mock {
-		tasks, err := c.Notion.Tasks(ctx)
-		if err != nil {
-			status["tasks"] = "error: " + err.Error()
-			log.Printf("collect: notion: %v", err)
-		} else {
-			status["tasks"] = "live"
-			if err := c.storeTasks(ctx, tasks, true); err != nil {
-				return err
-			}
-		}
-	} else {
-		status["tasks"] = "mock"
-		if err := c.storeTasks(ctx, sources.DummyTasks(), false); err != nil {
-			return err
-		}
+	st, err := c.collectTasks(ctx)
+	if err != nil {
+		return err
 	}
+	status["tasks"] = st
 
 	// calendar
 	from, to := c.today().AddDate(0, 0, -40), c.today().AddDate(0, 0, 45)
@@ -85,59 +92,190 @@ func (c *Collector) Collect(ctx context.Context) error {
 		}
 	}
 
-	// weather
-	var w model.Weather
-	if !c.cfg.Mock {
-		var err error
-		if w, err = c.weather.Today(ctx); err != nil {
-			status["weather"] = "error: " + err.Error()
-			log.Printf("collect: weather: %v", err)
-			w = sources.DummyWeather(c.cfg.WeatherLocation)
-		} else {
-			status["weather"] = "live"
-		}
-	} else {
-		status["weather"] = "mock"
-		w = sources.DummyWeather(c.cfg.WeatherLocation)
-	}
-	if err := c.setKV(ctx, "weather", w); err != nil {
-		return err
-	}
-
-	// news
-	feeds, err := c.feeds(ctx)
+	// weather: every place, 7 days each
+	wst, err := c.collectWeather(ctx)
 	if err != nil {
 		return err
 	}
-	if len(feeds) > 0 && !c.cfg.Mock {
-		items, errs := sources.News(ctx, feeds, 12)
-		for u, e := range errs {
-			log.Printf("collect: feed %s: %v", u, e)
-		}
-		if len(items) == 0 {
-			status["news"] = "error: no feed could be read"
-			items = sources.DummyNews()
-		} else if len(errs) > 0 {
-			status["news"] = fmt.Sprintf("live (%d feeds failed)", len(errs))
-		} else {
-			status["news"] = "live"
-		}
-		if err := c.storeNews(ctx, items); err != nil {
-			return err
-		}
-	} else {
-		status["news"] = "mock"
-		if err := c.storeNews(ctx, sources.DummyNews()); err != nil {
-			return err
-		}
+	status["weather"] = wst
+
+	// news (general + security feeds)
+	nst, err := c.collectNews(ctx)
+	if err != nil {
+		return err
 	}
+	status["news"] = nst
 
 	if err := c.setKV(ctx, "source_status", status); err != nil {
 		return err
 	}
+	ok := true
+	for _, v := range status {
+		if strings.HasPrefix(v, "error") {
+			ok = false
+		}
+	}
+	if raw, err := json.Marshal(status); err == nil {
+		_, _ = c.pool.Exec(ctx, `INSERT INTO collect_log(started_at,finished_at,ok,status) VALUES($1,now(),$2,$3)`, started, ok, raw)
+		_, _ = c.pool.Exec(ctx, `DELETE FROM collect_log WHERE id < (SELECT max(id) FROM collect_log) - 2000`)
+	}
 	log.Printf("collect: done in %s: %v", time.Since(started).Round(time.Millisecond), status)
 	_, err = c.build(ctx)
 	return err
+}
+
+// collectTasks pulls the Notion board (or dummy data) into tasks_cache and returns the source status text.
+func (c *Collector) collectTasks(ctx context.Context) (string, error) {
+	if c.Notion.Configured() && !c.cfg.Mock {
+		if schema, err := c.Notion.LoadSchema(ctx); err == nil {
+			_ = c.setKV(ctx, "notion_schema", schema)
+		}
+		tasks, err := c.Notion.Tasks(ctx)
+		if err != nil {
+			log.Printf("collect: notion: %v", err)
+			return "error: " + err.Error(), nil
+		}
+		if err := c.storeTasks(ctx, tasks, true); err != nil {
+			return "", err
+		}
+		_ = c.setKV(ctx, "tasks_synced", time.Now())
+		return "live", nil
+	}
+	if err := c.storeTasks(ctx, sources.DummyTasks(), false); err != nil {
+		return "", err
+	}
+	_ = c.setKV(ctx, "tasks_synced", time.Now())
+	return "mock", nil
+}
+
+// Places returns the followed places, home first.
+func (c *Collector) Places(ctx context.Context) ([]model.Place, error) {
+	rows, err := c.pool.Query(ctx, `SELECT id,name,label,lat,lon,timezone,is_home,sort FROM weather_places ORDER BY is_home DESC, sort, id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []model.Place
+	for rows.Next() {
+		var p model.Place
+		if err := rows.Scan(&p.ID, &p.Name, &p.Label, &p.Lat, &p.Lon, &p.Timezone, &p.Home, &p.Sort); err != nil {
+			return nil, err
+		}
+		out = append(out, p)
+	}
+	return out, rows.Err()
+}
+
+// ensureHomePlace seeds the home place from .env the first time (WEATHER_LAT/LON/LOCATION).
+func (c *Collector) ensureHomePlace(ctx context.Context) error {
+	var n int
+	if err := c.pool.QueryRow(ctx, `SELECT count(*) FROM weather_places`).Scan(&n); err != nil {
+		return err
+	}
+	if n > 0 {
+		return nil
+	}
+	_, err := c.pool.Exec(ctx, `INSERT INTO weather_places(name,label,lat,lon,timezone,is_home,sort) VALUES($1,$1,$2,$3,$4,true,0)`,
+		c.cfg.WeatherLocation, c.cfg.Latitude, c.cfg.Longitude, c.cfg.Timezone.String())
+	return err
+}
+
+// collectWeather fetches a forecast for every place and stores them; home's today also feeds the Kindle top bar.
+func (c *Collector) collectWeather(ctx context.Context) (string, error) {
+	if err := c.ensureHomePlace(ctx); err != nil {
+		return "", err
+	}
+	places, err := c.Places(ctx)
+	if err != nil {
+		return "", err
+	}
+	var forecasts []model.PlaceForecast
+	failed := 0
+	for _, p := range places {
+		var f model.PlaceForecast
+		if c.cfg.Mock {
+			f = sources.DummyForecast(p, c.cfg.Timezone)
+		} else {
+			fctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+			f, err = c.weather.Forecast(fctx, p)
+			cancel()
+			if err != nil {
+				log.Printf("collect: weather %s: %v", p.Name, err)
+				failed++
+				f = sources.DummyForecast(p, c.cfg.Timezone)
+				f.Error = err.Error()
+			}
+		}
+		forecasts = append(forecasts, f)
+	}
+	if err := c.setKV(ctx, "forecast", forecasts); err != nil {
+		return "", err
+	}
+	// today at home, for the Kindle top bar
+	w := model.Weather{}
+	if len(forecasts) > 0 {
+		h := forecasts[0]
+		w = model.Weather{TempC: h.Current.TempC, Summary: h.Current.Summary, Location: h.Place.Name}
+		if len(h.Days) > 0 {
+			w.HiC, w.LoC = h.Days[0].HiC, h.Days[0].LoC
+		}
+	}
+	if err := c.setKV(ctx, "weather", w); err != nil {
+		return "", err
+	}
+	switch {
+	case c.cfg.Mock:
+		return "mock", nil
+	case failed == len(places):
+		return "error: Open-Meteo unreachable for every place", nil
+	case failed > 0:
+		return fmt.Sprintf("live (%d of %d places failed)", len(places)-failed, len(places)), nil
+	}
+	return "live", nil
+}
+
+// CollectWeather refreshes only the forecasts (the admin "Refresh" button).
+func (c *Collector) CollectWeather(ctx context.Context) (string, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	st, err := c.collectWeather(ctx)
+	if err != nil {
+		return st, err
+	}
+	var status map[string]string
+	if c.getKV(ctx, "source_status", &status) != nil || status == nil {
+		status = map[string]string{}
+	}
+	status["weather"] = st
+	_ = c.setKV(ctx, "source_status", status)
+	_, err = c.build(ctx)
+	return st, err
+}
+
+// Geocode searches place names through Open-Meteo.
+func (c *Collector) Geocode(ctx context.Context, name string) ([]model.Place, error) {
+	return c.weather.Geocode(ctx, name)
+}
+
+// CollectTasks syncs only the Notion board and rebuilds the snapshot (the admin "Sync now" button).
+func (c *Collector) CollectTasks(ctx context.Context) (string, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	st, err := c.collectTasks(ctx)
+	if err != nil {
+		return st, err
+	}
+	var status map[string]string
+	if c.getKV(ctx, "source_status", &status) != nil || status == nil {
+		status = map[string]string{}
+	}
+	status["tasks"] = st
+	_ = c.setKV(ctx, "source_status", status)
+	_, err = c.build(ctx)
+	if strings.HasPrefix(st, "error") {
+		return st, fmt.Errorf("%s", strings.TrimPrefix(st, "error: "))
+	}
+	return st, err
 }
 
 // Build recomputes the snapshot from the database only (no network). Used after every write.
@@ -172,11 +310,20 @@ func (c *Collector) storeTasks(ctx context.Context, tasks []model.Task, live boo
 	ids := make([]string, 0, len(tasks))
 	for _, t := range tasks {
 		ids = append(ids, t.ID)
-		// live: source wins on done. mock: keep local done flags so taps persist across restarts.
-		q := `INSERT INTO tasks_cache(id,title,project,estimate_min,done,top,next_step,sort,updated_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,now())
+		var due *string
+		if t.Due != "" {
+			d := t.Due
+			due = &d
+		}
+		// live: Notion wins on status/done. mock: keep local status so taps persist across restarts.
+		q := `INSERT INTO tasks_cache(id,title,project,estimate_min,done,top,next_step,sort,status,kind,due,url,updated_at)
+			VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::date,$12,now())
 			ON CONFLICT (id) DO UPDATE SET title=EXCLUDED.title, project=EXCLUDED.project, estimate_min=EXCLUDED.estimate_min,
-			done=` + map[bool]string{true: "EXCLUDED.done", false: "tasks_cache.done"}[live] + `, top=EXCLUDED.top, next_step=EXCLUDED.next_step, sort=EXCLUDED.sort, updated_at=now()`
-		if _, err := tx.Exec(ctx, q, t.ID, t.Title, t.Project, t.EstimateMin, t.Done, t.Top, t.NextStep, t.Sort); err != nil {
+			next_step=EXCLUDED.next_step, sort=EXCLUDED.sort, due=EXCLUDED.due, url=EXCLUDED.url, updated_at=now()`
+		if live {
+			q += `, done=EXCLUDED.done, top=EXCLUDED.top, status=EXCLUDED.status, kind=EXCLUDED.kind`
+		}
+		if _, err := tx.Exec(ctx, q, t.ID, t.Title, t.Project, t.EstimateMin, t.Done, t.Top, t.NextStep, t.Sort, t.Status, t.Kind, due, t.URL); err != nil {
 			return err
 		}
 	}
@@ -206,6 +353,78 @@ func (c *Collector) storeEvents(ctx context.Context, events []model.Event) error
 	return tx.Commit(ctx)
 }
 
+// collectNews fetches every enabled feed and records per-feed results for the admin page.
+func (c *Collector) collectNews(ctx context.Context) (string, error) {
+	feeds, err := c.feeds(ctx)
+	if err != nil {
+		return "", err
+	}
+	if len(feeds) == 0 || c.cfg.Mock {
+		if err := c.storeNews(ctx, sources.DummyNews()); err != nil {
+			return "", err
+		}
+		return "mock", nil
+	}
+	items, results := sources.News(ctx, feeds, 15)
+	items, muted := sources.Curate(items, feeds, c.NewsFilter(ctx), 24, 15)
+	_ = c.setKV(ctx, "news_muted", muted)
+	failed := 0
+	for _, r := range results {
+		msg := ""
+		if r.Err != nil {
+			failed++
+			msg = r.Err.Error()
+			log.Printf("collect: feed %s: %v", r.URL, r.Err)
+		}
+		_, _ = c.pool.Exec(ctx, `UPDATE news_sources SET last_error=$2, last_items=$3, last_fetch=now() WHERE url=$1`, r.URL, msg, r.Items)
+	}
+	if len(items) == 0 {
+		if err := c.storeNews(ctx, sources.DummyNews()); err != nil {
+			return "", err
+		}
+		return "error: no feed could be read", nil
+	}
+	if err := c.storeNews(ctx, items); err != nil {
+		return "", err
+	}
+	if failed > 0 {
+		return fmt.Sprintf("live (%d of %d feeds failed)", failed, len(feeds)), nil
+	}
+	return "live", nil
+}
+
+// NewsFilter returns the saved include/exclude keywords, or the defaults.
+func (c *Collector) NewsFilter(ctx context.Context) sources.Filter {
+	var f sources.Filter
+	if err := c.getKV(ctx, "news_filter", &f); err != nil || (len(f.Include) == 0 && len(f.Exclude) == 0) {
+		return sources.DefaultFilter()
+	}
+	return f
+}
+
+// SaveNewsFilter stores the keywords; empty lists fall back to the defaults.
+func (c *Collector) SaveNewsFilter(ctx context.Context, f sources.Filter) error {
+	return c.setKV(ctx, "news_filter", f)
+}
+
+// CollectNews refreshes only the feeds (admin "Refresh" button).
+func (c *Collector) CollectNews(ctx context.Context) (string, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	st, err := c.collectNews(ctx)
+	if err != nil {
+		return st, err
+	}
+	var status map[string]string
+	if c.getKV(ctx, "source_status", &status) != nil || status == nil {
+		status = map[string]string{}
+	}
+	status["news"] = st
+	_ = c.setKV(ctx, "source_status", status)
+	_, err = c.build(ctx)
+	return st, err
+}
+
 func (c *Collector) storeNews(ctx context.Context, items []model.News) error {
 	tx, err := c.pool.Begin(ctx)
 	if err != nil {
@@ -216,8 +435,12 @@ func (c *Collector) storeNews(ctx context.Context, items []model.News) error {
 		return err
 	}
 	for i, n := range items {
-		if _, err := tx.Exec(ctx, `INSERT INTO news_cache(id,source,title,summary,published_at) VALUES($1,$2,$3,$4,$5) ON CONFLICT (id) DO NOTHING`,
-			n.ID, n.Source, n.Title, n.Summary, time.Now().Add(-time.Duration(i)*time.Second)); err != nil {
+		at := n.PublishedAt
+		if at.IsZero() {
+			at = time.Now().Add(-time.Duration(i) * time.Second)
+		}
+		if _, err := tx.Exec(ctx, `INSERT INTO news_cache(id,source,title,summary,published_at,category,link,alert) VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT (id) DO NOTHING`,
+			n.ID, n.Source, n.Title, n.Summary, at, n.Category, n.Link, n.Alert); err != nil {
 			return err
 		}
 	}
@@ -225,7 +448,7 @@ func (c *Collector) storeNews(ctx context.Context, items []model.News) error {
 }
 
 func (c *Collector) feeds(ctx context.Context) ([]sources.Feed, error) {
-	rows, err := c.pool.Query(ctx, `SELECT url, name FROM news_sources ORDER BY url`)
+	rows, err := c.pool.Query(ctx, `SELECT url, name, category, filter_mode, max_items FROM news_sources WHERE enabled ORDER BY category, url`)
 	if err != nil {
 		return nil, err
 	}
@@ -233,7 +456,7 @@ func (c *Collector) feeds(ctx context.Context) ([]sources.Feed, error) {
 	var out []sources.Feed
 	for rows.Next() {
 		var f sources.Feed
-		if err := rows.Scan(&f.URL, &f.Name); err != nil {
+		if err := rows.Scan(&f.URL, &f.Name, &f.Category, &f.Mode, &f.MaxItems); err != nil {
 			return nil, err
 		}
 		out = append(out, f)
@@ -250,6 +473,9 @@ func (c *Collector) setKV(ctx context.Context, key string, v any) error {
 	return err
 }
 
+// GetKV reads a value from the kv table (used by the admin UI).
+func (c *Collector) GetKV(ctx context.Context, key string, v any) error { return c.getKV(ctx, key, v) }
+
 func (c *Collector) getKV(ctx context.Context, key string, v any) error {
 	var raw []byte
 	if err := c.pool.QueryRow(ctx, `SELECT value FROM kv WHERE key=$1`, key).Scan(&raw); err != nil {
@@ -263,16 +489,25 @@ func (c *Collector) getKV(ctx context.Context, key string, v any) error {
 func (c *Collector) build(ctx context.Context) (*model.Dashboard, error) {
 	d := &model.Dashboard{GeneratedAt: time.Now().In(c.cfg.Timezone), Sources: map[string]string{}}
 	_ = c.getKV(ctx, "weather", &d.Weather)
+	d.Forecast = []model.PlaceForecast{}
+	_ = c.getKV(ctx, "forecast", &d.Forecast)
 	_ = c.getKV(ctx, "source_status", &d.Sources)
 	var err error
 	if d.Events, err = c.events(ctx); err != nil {
 		return nil, fmt.Errorf("events: %w", err)
 	}
-	if d.Tasks, err = c.tasks(ctx); err != nil {
+	if d.Tasks, d.TaskCounts, err = c.tasks(ctx); err != nil {
 		return nil, fmt.Errorf("tasks: %w", err)
 	}
+	_ = c.getKV(ctx, "tasks_synced", &d.TasksSynced)
 	if d.News, err = c.news(ctx); err != nil {
 		return nil, fmt.Errorf("news: %w", err)
+	}
+	if d.HN, err = c.NewsByCategory(ctx, "hn", 12); err != nil {
+		return nil, fmt.Errorf("hacker news: %w", err)
+	}
+	if d.Security, err = c.NewsByCategory(ctx, "security", 15); err != nil {
+		return nil, fmt.Errorf("security news: %w", err)
 	}
 	if d.Practice.Guitar, err = c.guitar(ctx); err != nil {
 		return nil, fmt.Errorf("guitar: %w", err)
@@ -280,11 +515,26 @@ func (c *Collector) build(ctx context.Context) (*model.Dashboard, error) {
 	if d.Practice.German, err = c.german(ctx); err != nil {
 		return nil, fmt.Errorf("german: %w", err)
 	}
+	if c.Course != nil {
+		if st, err := c.Course.StatusFor(ctx, c.today()); err == nil {
+			if st.Phase != "" {
+				d.Practice.German.Level = st.Phase
+			}
+			if raw, err := json.Marshal(st); err == nil {
+				d.Practice.German.Course = raw
+			}
+		}
+	}
 	if d.Practice.Vocab, err = c.vocab(ctx); err != nil {
 		return nil, fmt.Errorf("vocab: %w", err)
 	}
 	if d.Practice.Reading, err = c.reading(ctx); err != nil {
 		return nil, fmt.Errorf("reading: %w", err)
+	}
+	if c.English != nil {
+		if raw, err := json.Marshal(c.English.StatusFor(ctx, c.today())); err == nil {
+			d.Practice.English = raw
+		}
 	}
 	if err := c.setKV(ctx, "snapshot", d); err != nil {
 		return nil, err
@@ -316,8 +566,9 @@ func (c *Collector) events(ctx context.Context) ([]model.Event, error) {
 	return out, rows.Err()
 }
 
-func (c *Collector) tasks(ctx context.Context) ([]model.Task, error) {
-	rows, err := c.pool.Query(ctx, `SELECT id,title,project,estimate_min,done,top,next_step FROM tasks_cache ORDER BY top DESC, done ASC, sort ASC`)
+// AllTasks returns every cached task (for the admin page), in board order.
+func (c *Collector) AllTasks(ctx context.Context) ([]model.Task, error) {
+	rows, err := c.pool.Query(ctx, `SELECT id,title,project,estimate_min,done,top,next_step,status,kind,due,url FROM tasks_cache ORDER BY sort ASC`)
 	if err != nil {
 		return nil, err
 	}
@@ -325,16 +576,58 @@ func (c *Collector) tasks(ctx context.Context) ([]model.Task, error) {
 	out := []model.Task{}
 	for rows.Next() {
 		var t model.Task
-		if err := rows.Scan(&t.ID, &t.Title, &t.Project, &t.EstimateMin, &t.Done, &t.Top, &t.NextStep); err != nil {
+		var due *time.Time
+		if err := rows.Scan(&t.ID, &t.Title, &t.Project, &t.EstimateMin, &t.Done, &t.Top, &t.NextStep, &t.Status, &t.Kind, &due, &t.URL); err != nil {
 			return nil, err
+		}
+		if due != nil {
+			t.Due = due.Format("2006-01-02")
 		}
 		out = append(out, t)
 	}
 	return out, rows.Err()
 }
 
-func (c *Collector) news(ctx context.Context) ([]model.News, error) {
-	rows, err := c.pool.Query(ctx, `SELECT id,source,title,summary FROM news_cache ORDER BY published_at DESC NULLS LAST LIMIT 12`)
+// tasks returns what the Kindle shows (top, next, done today) plus counts for the whole board.
+func (c *Collector) tasks(ctx context.Context) ([]model.Task, model.TaskCounts, error) {
+	all, err := c.AllTasks(ctx)
+	if err != nil {
+		return nil, model.TaskCounts{}, err
+	}
+	var counts model.TaskCounts
+	out := []model.Task{}
+	for _, t := range all {
+		switch t.Kind {
+		case model.KindTop:
+			counts.Top++
+		case model.KindNext:
+			counts.Next++
+		case model.KindBacklog:
+			counts.Backlog++
+		case model.KindDone:
+			counts.Done++
+		}
+		if t.Kind == model.KindTop || t.Kind == model.KindNext || t.Kind == model.KindDone {
+			out = append(out, t)
+		}
+	}
+	// top first (open before done), then next, then done
+	rank := map[string]int{model.KindTop: 0, model.KindNext: 1, model.KindDone: 2}
+	sort.SliceStable(out, func(i, j int) bool {
+		if rank[out[i].Kind] != rank[out[j].Kind] {
+			return rank[out[i].Kind] < rank[out[j].Kind]
+		}
+		if out[i].Done != out[j].Done {
+			return !out[i].Done
+		}
+		return out[i].Sort < out[j].Sort
+	})
+	return out, counts, nil
+}
+
+// NewsByCategory returns cached items for one category, newest first.
+func (c *Collector) NewsByCategory(ctx context.Context, category string, limit int) ([]model.News, error) {
+	rows, err := c.pool.Query(ctx, `SELECT id,source,title,summary,link,category,published_at,alert FROM news_cache WHERE category=$1 ORDER BY published_at DESC NULLS LAST LIMIT $2`, category, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -342,12 +635,20 @@ func (c *Collector) news(ctx context.Context) ([]model.News, error) {
 	out := []model.News{}
 	for rows.Next() {
 		var n model.News
-		if err := rows.Scan(&n.ID, &n.Source, &n.Title, &n.Summary); err != nil {
+		var at *time.Time
+		if err := rows.Scan(&n.ID, &n.Source, &n.Title, &n.Summary, &n.Link, &n.Category, &at, &n.Alert); err != nil {
 			return nil, err
+		}
+		if at != nil {
+			n.PublishedAt = at.In(c.cfg.Timezone)
 		}
 		out = append(out, n)
 	}
 	return out, rows.Err()
+}
+
+func (c *Collector) news(ctx context.Context) ([]model.News, error) {
+	return c.NewsByCategory(ctx, "general", 12)
 }
 
 // last7 returns 7 ints, oldest first, last is today. doneToday is the last element.
@@ -506,10 +807,23 @@ func (c *Collector) reading(ctx context.Context) (model.Reading, error) {
 	if r.Last7, r.DoneToday, err = c.last7(ctx, "reading"); err != nil {
 		return r, err
 	}
+	if c.Summaries != nil {
+		// book summaries replace page tracking: one book a day from the plan
+		st := c.Summaries.StatusFor(ctx, c.today())
+		if st.Today != nil {
+			r.Book = model.Book{Title: st.Today.Title, Author: st.Today.Author, Page: st.Day, Pages: st.Total, StartedOn: st.StartDate}
+		}
+		for _, b := range st.Next {
+			r.Next = append(r.Next, model.Book{Title: b.Title, Author: b.Author})
+		}
+		r.Summary, err = json.Marshal(st)
+		return r, err
+	}
 	var bookID int
 	var started *time.Time
-	err = c.pool.QueryRow(ctx, `SELECT id,title,author,pages,started_on FROM books WHERE status='reading' ORDER BY id LIMIT 1`).
-		Scan(&bookID, &r.Book.Title, &r.Book.Author, &r.Book.Pages, &started)
+	var startPage int
+	err = c.pool.QueryRow(ctx, `SELECT id,title,author,pages,started_on,start_page FROM books WHERE status='reading' ORDER BY id LIMIT 1`).
+		Scan(&bookID, &r.Book.Title, &r.Book.Author, &r.Book.Pages, &started, &startPage)
 	if err == nil {
 		if started != nil {
 			r.Book.StartedOn = started.Format("2006-01-02")
@@ -517,6 +831,7 @@ func (c *Collector) reading(ctx context.Context) (model.Reading, error) {
 		if err := c.pool.QueryRow(ctx, `SELECT coalesce(sum(pages),0) FROM reading_sessions WHERE book_id=$1`, bookID).Scan(&r.Book.Page); err != nil {
 			return r, err
 		}
+		r.Book.Page += startPage
 		if r.Book.Pages > 0 && r.Book.Page > r.Book.Pages {
 			r.Book.Page = r.Book.Pages
 		}
@@ -553,22 +868,42 @@ func (c *Collector) reading(ctx context.Context) (model.Reading, error) {
 
 /* ---------- writes from the client ---------- */
 
+// SetTaskDone marks a task done (status -> Done) or undoes it (status -> the status it had
+// before). The local cache changes first so the Kindle redraws at once; the Notion write
+// follows synchronously with a short timeout, and a failure is recorded for the admin page.
 func (c *Collector) SetTaskDone(ctx context.Context, id string, done bool) error {
-	tag, err := c.pool.Exec(ctx, `UPDATE tasks_cache SET done=$2, updated_at=now() WHERE id=$1`, id, done)
-	if err != nil {
-		return err
-	}
-	if tag.RowsAffected() == 0 {
+	var status, prev string
+	if err := c.pool.QueryRow(ctx, `SELECT status, prev_status FROM tasks_cache WHERE id=$1`, id).Scan(&status, &prev); err != nil {
 		return fmt.Errorf("unknown task")
 	}
+	m := c.Notion.Mapping
+	var newStatus string
+	if done {
+		if status == m.Done {
+			return nil
+		}
+		newStatus, prev = m.Done, status
+	} else {
+		newStatus = prev
+		if newStatus == "" || newStatus == m.Done {
+			newStatus = m.Top
+		}
+		prev = ""
+	}
+	kind := m.Kind(newStatus)
+	if _, err := c.pool.Exec(ctx, `UPDATE tasks_cache SET done=$2, top=$3, status=$4, prev_status=$5, kind=$6, updated_at=now() WHERE id=$1`,
+		id, kind == model.KindDone, kind == model.KindTop, newStatus, prev, kind); err != nil {
+		return err
+	}
 	if c.Notion.Configured() && !c.cfg.Mock {
-		go func() {
-			bg, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-			defer cancel()
-			if err := c.Notion.MarkDone(bg, id, done); err != nil {
-				log.Printf("notion: mark done %s: %v", id, err)
-			}
-		}()
+		wctx, cancel := context.WithTimeout(ctx, 8*time.Second)
+		defer cancel()
+		if err := c.Notion.SetStatus(wctx, id, newStatus); err != nil {
+			log.Printf("notion: set status %s -> %q: %v", id, newStatus, err)
+			_ = c.setKV(ctx, "notion_write_error", fmt.Sprintf("%s: %s -> %s: %v", time.Now().In(c.cfg.Timezone).Format("Mon 2 Jan 15:04"), id, newStatus, err))
+		} else {
+			_ = c.setKV(ctx, "notion_write_error", "")
+		}
 	}
 	return nil
 }
@@ -592,11 +927,46 @@ func (c *Collector) SetPracticeDone(ctx context.Context, key string, done bool) 
 	return nil
 }
 
+// MarkSummaryRead marks a book summary read (or unread). Reading today's book also counts as
+// today's reading practice.
+func (c *Collector) MarkSummaryRead(ctx context.Context, bookID int, done bool) error {
+	if c.Summaries == nil {
+		return fmt.Errorf("book summaries are not loaded")
+	}
+	if err := c.Summaries.MarkRead(ctx, bookID, done); err != nil {
+		return err
+	}
+	b, err := c.Summaries.BookByID(ctx, bookID)
+	if err != nil {
+		return err
+	}
+	if done || b.Position == c.Summaries.DayFor(ctx, c.today()) {
+		return c.SetPracticeDone(ctx, "reading", done)
+	}
+	return nil
+}
+
 func (c *Collector) AdvanceGuitarWeek(ctx context.Context, delta int) (int, error) {
+	if delta > 0 {
+		// moving forward marks the week(s) being left as completed today
+		_, _ = c.pool.Exec(ctx, `UPDATE guitar_plan SET completed_on=$1 WHERE completed_on IS NULL AND week >= (SELECT current_week FROM practice_state WHERE key='guitar') AND week < (SELECT current_week FROM practice_state WHERE key='guitar') + $2`, c.today(), delta)
+	}
 	var week int
 	err := c.pool.QueryRow(ctx, `UPDATE practice_state SET current_week=GREATEST(1,current_week+$1) WHERE key='guitar' RETURNING current_week`, delta).Scan(&week)
 	return week, err
 }
+
+// SetGuitarWeek jumps to a specific week without touching completion dates.
+func (c *Collector) SetGuitarWeek(ctx context.Context, week int) error {
+	if week < 1 || week > 520 {
+		return fmt.Errorf("week out of range")
+	}
+	_, err := c.pool.Exec(ctx, `UPDATE practice_state SET current_week=$1 WHERE key='guitar'`, week)
+	return err
+}
+
+// Today exposes the collector's notion of "today" (in the configured zone) to other packages.
+func (c *Collector) Today() time.Time { return c.today() }
 
 func (c *Collector) AddReadingSession(ctx context.Context, pages, minutes int) error {
 	if pages < 0 || pages > 2000 || minutes < 0 || minutes > 1440 {

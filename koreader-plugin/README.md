@@ -1,14 +1,17 @@
 # Dashboard plugin for KOReader
 
-A full screen, landscape dashboard inside KOReader, fed by the Go backend. Same screens as
-the browser version (home, tasks, calendar day, guitar, German, vocab, reading, news), drawn
-natively, with proper e-ink refreshes and no browser chrome.
+A full screen, landscape dashboard inside KOReader, fed by the Go backend. Drawn natively,
+with proper e-ink refreshes and no browser chrome.
+
+Screens: home, tasks, calendar day, weather, guitar, German, English, vocabulary, reading,
+book summary, read-aloud passage, news and security.
 
 ```
 dashboard.koplugin/
   _meta.lua              plugin id and description
   main.lua               KOReader glue: menu, settings, HTTP, rotation, painting, taps
   dashboard_render.lua   pure Lua layout: JSON + state -> draw ops + tap areas (testable anywhere)
+tools/                   off-device layout check: mock snapshot, SVG preview, robustness run
 ```
 
 ## Install on the Kindle
@@ -25,14 +28,42 @@ dashboard.koplugin/
 KOReader will turn Wi-Fi on if needed, rotate to landscape, fetch the JSON and draw the home
 screen. When you leave, the rotation is restored.
 
+## The home screen
+
+A 1448 x 1072 canvas, two columns, nothing scrolls.
+
+Left column:
+
+* Header: the date, then today's weather as `24 deg  Partly cloudy  31/21 deg  rain 20%`.
+  Tapping the weather line opens the weather page. Sync status, `Refresh` and `Exit` sit on
+  the right of the header.
+* Task board: the Top 3 with checkbox, project, estimate and next step, a `NEXT` column beside
+  them, and a footer with the real counts from `taskCounts`, including the backlog the Kindle
+  never receives.
+* News board: Hacker News in one column, the curated general feeds in the other. When a
+  security item is flagged, a black banner takes the top of the board and opens the security
+  page.
+
+Right column:
+
+* The month, today filled, a dot on any day with an event. Tap a day to open it.
+* Four practice buttons (German, Guitar, Reading, English). Each carries today's state, for
+  example `Quiz 12 of 14` or `Day 12: Deep Work`, and a box showing whether it is done. The
+  whole button opens the page; marking done happens there, so a mis-tap cannot mark anything.
+* Today: what is left on the calendar today, with times.
+
+Vocabulary has no button of its own. It is reached from the English page.
+
 ## Using it
 
-* Tap a task checkbox or a practice tile's box to mark it done (sent to the backend at once).
-* Tap a panel to open its detail page. `< Home` goes back. `Refresh` fetches again.
+* Tap a task checkbox to mark it done (sent to the backend at once).
+* Tap a panel or a button to open its page. `< Home` goes back. `Refresh` fetches again.
 * On the home screen, `Exit` closes the dashboard. A long press anywhere also goes back, and a
   long press on the home screen exits.
 * On the calendar day page, `< Previous` and `Next >` move one day.
 * On the guitar page, `Week N done >` advances the plan to the next week.
+* The book summary and the read-aloud passage open in a reader. `< Back` and `Next >` turn the
+  page, the counter in the header shows where you are, and the middle button marks it read.
 * `Tools > Dashboard > Rotate to landscape while open` can be turned off if rotation misbehaves
   on your firmware; the dashboard then draws scaled inside the portrait screen.
 
@@ -51,3 +82,18 @@ screen. When you leave, the rotation is restored.
 state table and returns a list of draw operations (rect, border, text, box) and tap rectangles.
 That is what made it possible to test the layout off-device. To change the layout, edit that
 file only; `main.lua` just paints what it returns.
+
+Two rules when editing it:
+
+* Keep the file pure ASCII. KOReader runs LuaJIT, which is Lua 5.1 and has no `\u{...}`
+  escapes, so symbols go in as decimal byte escapes (`"\194\176"` is a degree sign).
+* There is no way to measure text in pure Lua. The reader therefore pages long text by
+  character budget (`READER_BUDGET`), set low on purpose: a short page is better than a page
+  whose last lines are silently cut off.
+
+The state table the renderer takes is
+`{ page, dayOffset, refreshCount, readerPage, lastSync, syncOk, error }`.
+
+To check a layout without a Kindle, use `tools/` (see `tools/README.md`): `lua robust.lua`
+renders every page against empty and half built snapshots, and `lua preview.lua out` writes one
+SVG per page and reports anything drawn outside the canvas.

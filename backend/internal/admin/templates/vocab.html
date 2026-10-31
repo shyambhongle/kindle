@@ -1,0 +1,55 @@
+{{define "content"}}
+{{$d := .Data}}
+<div class="row between" style="margin-bottom:18px">
+  <h1 style="margin:0">English vocabulary</h1>
+  <span class="badge {{if $d.Due}}warn{{else}}ok{{end}}">{{$d.Due}} due today</span>
+</div>
+
+<div class="grid c2">
+<div class="card">
+  <table>
+    <tr><th>Word</th><th>Definition</th><th>Review</th><th></th></tr>
+    {{range $d.Items}}
+    <tr class="{{if .IsDue}}due{{end}}">
+      <td><strong>{{.Word}}</strong>{{if .Pos}} <span class="muted small">{{.Pos}}</span>{{end}}</td>
+      <td>{{.Definition}}{{if .Example}}<div class="muted small"><i>{{.Example}}</i></div>{{end}}</td>
+      <td class="small">{{if .Due}}due {{ptrdate .Due}}<div class="muted">every {{.Interval}} d · {{.Reviewed}}x</div>{{else}}<span class="muted">no schedule</span>{{end}}</td>
+      <td style="white-space:nowrap;text-align:right">
+        <a class="btn sm" href="/admin/vocab?edit={{.ID}}">edit</a>
+        <form method="post" action="/admin/vocab/{{.ID}}/reset" class="inline"><button class="sm" title="Review again from today">reset</button></form>
+        <form method="post" action="/admin/vocab/{{.ID}}/delete" class="inline"><button class="sm danger">delete</button></form>
+      </td>
+    </tr>
+    {{else}}<tr><td colspan="4" class="muted">No words yet.</td></tr>{{end}}
+  </table>
+</div>
+
+<div>
+<div class="card">
+  <h2>{{if $d.Edit}}Edit word{{else}}Add a word{{end}}</h2>
+  <form method="post" action="/admin/vocab">
+    {{if $d.Edit}}<input type="hidden" name="id" value="{{$d.Edit.ID}}">{{end}}
+    <div class="fields">
+      <div><label>Word</label><input type="text" name="word" value="{{if $d.Edit}}{{$d.Edit.Word}}{{end}}" required></div>
+      <div><label>Part of speech</label><input type="text" name="pos" value="{{if $d.Edit}}{{$d.Edit.Pos}}{{end}}" placeholder="adjective"></div>
+    </div>
+    <div class="field"><label>Definition</label><input type="text" name="definition" value="{{if $d.Edit}}{{$d.Edit.Definition}}{{end}}" required></div>
+    <div class="field"><label>Example sentence</label><input type="text" name="example" value="{{if $d.Edit}}{{$d.Edit.Example}}{{end}}"></div>
+    <div class="row"><button class="primary">Save</button>{{if $d.Edit}}<a class="btn" href="/admin/vocab">Cancel</a>{{end}}</div>
+  </form>
+</div>
+<div class="card">
+  <h2>Import CSV</h2>
+  <p class="muted small">Columns: <code>word,pos,definition,example</code>. A header row is optional. Existing words are updated.</p>
+  <form method="post" action="/admin/vocab/import">
+    <div class="field"><textarea name="csv" rows="6" placeholder="resilient,adjective,Able to recover quickly.,Forests can be resilient after fire."></textarea></div>
+    <button>Import</button>
+  </form>
+</div>
+<div class="card">
+  <h3>Review schedule</h3>
+  <p class="muted small">New words are due today. When you mark English vocab done (on the Kindle or Overview), every due word moves forward: 1, 2, 4, 8 ... up to 60 days. "Reset" puts a word back to today.</p>
+</div>
+</div>
+</div>
+{{end}}

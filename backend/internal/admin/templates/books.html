@@ -1,0 +1,149 @@
+{{define "content"}}
+{{$d := .Data}}{{$s := $d.Status}}
+<div class="row between" style="margin-bottom:18px">
+  <h1 style="margin:0">Book summaries</h1>
+  <div class="row">
+    {{if $d.Configured}}<span class="badge ok">Claude API: {{$d.Model}}</span>{{else}}<span class="badge err">ANTHROPIC_API_KEY not set</span>{{end}}
+  </div>
+</div>
+
+<div class="grid c4">
+  <div class="card stat"><span class="v">{{if $s.Started}}{{if $s.Finished}}done{{else}}{{$s.Day}}{{end}}{{else}}–{{end}}</span><span class="k">{{if $s.Started}}day of {{$s.Total}}{{else}}starts {{$s.StartDate}}{{end}}</span></div>
+  <div class="card stat"><span class="v">{{$d.ReadCount}}</span><span class="k">summaries read</span></div>
+  <div class="card stat"><span class="v">{{$d.Ready}}</span><span class="k">summaries generated</span></div>
+  <div class="card stat"><span class="v">{{if $d.View}}{{with $d.View.Summary}}{{.Minutes}}{{else}}–{{end}}{{else}}–{{end}}</span><span class="k">min to read {{if $d.IsToday}}today's{{else}}this{{end}} summary</span></div>
+</div>
+
+{{if $s.Finished}}<div class="flash">You have reached the end of the plan. Add more books below; each new one gets the next day.</div>{{end}}
+
+{{with $d.View}}{{$e := .}}
+<div class="card">
+  <div class="row between">
+    <div>
+      <p class="muted small" style="margin:0">{{if $d.IsToday}}Today · {{end}}Day {{.Position}} · {{.Date}} · {{.Category}}</p>
+      <h2 style="margin:4px 0 0">{{.Title}}</h2>
+      <p class="muted" style="margin:2px 0 0">{{.Author}}</p>
+    </div>
+    <div class="row">
+      {{if .Summary}}
+      <form method="post" action="/admin/books/{{.ID}}/read" class="inline"><input type="hidden" name="done" value="{{if .Read}}0{{else}}1{{end}}"><button class="sm {{if not .Read}}primary{{end}}">{{if .Read}}✓ Read (undo){{else}}Mark as read{{end}}</button></form>
+      {{end}}
+      <form method="post" action="/admin/books/{{.ID}}/generate" class="inline"><button class="sm">{{if .Summary}}Regenerate{{else}}Generate now{{end}}</button></form>
+    </div>
+  </div>
+  {{if .Why}}<p class="small" style="margin-top:10px"><strong>Why this book:</strong> {{.Why}}</p>{{end}}
+  {{if .Error}}<div class="flash err">Last generation failed: {{.Error}}</div>{{end}}
+  {{if not .Summary}}<p class="muted">No summary yet. The scheduler writes today's in the morning and tomorrow's after 18:00. Generating takes 1 to 3 minutes.</p>{{end}}
+  {{with .Summary}}
+  <p class="muted small">{{.WordCount}} words · about {{.Minutes}} minutes · {{len .Lessons}} lessons · generated {{dt $e.GeneratedAt}} · {{$e.Model}}</p>
+  <div class="summary">
+    <h3>1. Book introduction</h3>
+    <p class="lead">{{.Intro.OneLine}}</p>
+    <p><strong>What the author is trying to teach.</strong> {{.Intro.AuthorAim}}</p>
+    {{range paras .Intro.BigIdea}}<p>{{.}}</p>{{end}}
+    <p><strong>About the author.</strong> {{.Intro.AboutAuthor}}</p>
+    <p><strong>Why it matters for you.</strong> {{.Intro.WhoFor}}</p>
+
+    <h3>2. Core lessons</h3>
+    {{range $i, $l := .Lessons}}
+    <div class="lesson">
+      <h4>{{add $i 1}}. {{$l.Title}}</h4>
+      {{range paras $l.Idea}}<p>{{.}}</p>{{end}}
+      <p><span class="badge">At work</span> {{$l.AtWork}}</p>
+      <p><span class="badge">In life</span> {{$l.InLife}}</p>
+      <p class="remember">{{$l.Remember}}</p>
+    </div>
+    {{end}}
+
+    <h3>3. Psychological insights</h3>
+    {{range .Insights}}
+    <div class="lesson">
+      <h4>{{.Title}} <span class="badge {{if eq .Evidence "established research"}}ok{{else if eq .Evidence "contested"}}err{{else if eq .Evidence "mixed evidence"}}warn{{end}}">{{.Evidence}}</span></h4>
+      {{range paras .Explanation}}<p>{{.}}</p>{{end}}
+      {{if .Source}}<p class="muted small">Basis: {{.Source}}</p>{{end}}
+    </div>
+    {{end}}
+
+    <h3>4. Practical implementation</h3>
+    {{range .Exercises}}
+    <div class="lesson">
+      <h4>{{.Title}}</h4>
+      <p class="small muted">{{.Why}}</p>
+      <ol class="small">{{range .Steps}}<li>{{.}}</li>{{end}}</ol>
+      {{if .When}}<p class="small"><strong>When:</strong> {{.When}}</p>{{end}}
+    </div>
+    {{end}}
+
+    {{if .Limits}}<h3>5. A critical view</h3>{{range paras .Limits}}<p>{{.}}</p>{{end}}{{end}}
+    {{if .Connections}}<h3>Connections to earlier books</h3><ul>{{range .Connections}}<li>{{.}}</li>{{end}}</ul>{{end}}
+
+    <h3>6. Final takeaway</h3>
+    <ol>{{range .Takeaways}}<li>{{.}}</li>{{end}}</ol>
+    {{range paras .FinalThought}}<p>{{.}}</p>{{end}}
+  </div>
+
+  <form method="post" action="/admin/books/{{$e.ID}}/reflect" id="reflect" style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border)">
+    <div class="fields">
+      <div style="max-width:160px"><label>How useful (1 to 5)</label><select name="rating"><option value="0">–</option>{{range $i := seq 5}}<option value="{{add $i 1}}" {{if eq $e.Rating (add $i 1)}}selected{{end}}>{{add $i 1}}</option>{{end}}</select></div>
+    </div>
+    <div class="field"><label>What will you apply? (one or two things, so it is not just collected knowledge)</label><textarea name="note" rows="3">{{$e.Note}}</textarea></div>
+    <button class="sm">Save</button>
+  </form>
+  {{end}}
+</div>
+{{end}}
+
+<div class="card" id="plan">
+  <div class="row between"><h2 style="margin:0">The plan</h2><span class="muted small">one book a day from {{$d.Settings.StartDate}} · {{len $d.Plan}} books</span></div>
+  {{with $d.Edit}}
+  <form method="post" action="/admin/books/{{.ID}}" style="margin:12px 0;padding:12px;border:1px solid var(--border);border-radius:8px">
+    <div class="fields"><div><label>Title</label><input type="text" name="title" value="{{.Title}}" required></div><div><label>Author</label><input type="text" name="author" value="{{.Author}}"></div>
+      <div><label>Category</label><input type="text" name="category" value="{{.Category}}" list="cats"></div></div>
+    <div class="field"><label>Why this book</label><input type="text" name="why" value="{{.Why}}"></div>
+    <div class="row"><button class="primary sm">Save day {{.Position}}</button><a class="btn sm" href="/admin/books#plan">Cancel</a></div>
+  </form>
+  {{end}}
+  <table>
+    <tr><th>Day</th><th>Date</th><th>Book</th><th>Category</th><th>Summary</th><th></th></tr>
+    {{range $d.Plan}}
+    <tr class="{{if and $s.Today (eq .ID $s.Today.ID)}}current{{else if and $s.Started (lt .Position $s.Day)}}past{{end}}">
+      <td>{{.Position}}</td>
+      <td class="small" style="white-space:nowrap">{{dayname .Date}}</td>
+      <td><a href="/admin/books?id={{.ID}}"><strong>{{.Title}}</strong></a><div class="muted small">{{.Author}}</div></td>
+      <td class="small muted">{{.Category}}</td>
+      <td style="white-space:nowrap">{{if .Read}}<span class="badge ok">read{{if .Rating}} · {{.Rating}}/5{{end}}</span>{{else if eq .Status "ready"}}<span class="badge">ready</span>{{else if eq .Status "error"}}<span class="badge err">failed</span>{{else}}<span class="muted small">pending</span>{{end}}</td>
+      <td style="white-space:nowrap">
+        <form method="post" action="/admin/books/{{.ID}}/move" class="inline"><input type="hidden" name="dir" value="up"><button class="sm" title="Move a day earlier">↑</button></form>
+        <form method="post" action="/admin/books/{{.ID}}/move" class="inline"><input type="hidden" name="dir" value="down"><button class="sm" title="Move a day later">↓</button></form>
+        <a class="btn sm" href="/admin/books?edit={{.ID}}#plan">edit</a>
+        {{if not .Read}}<form method="post" action="/admin/books/{{.ID}}/delete" class="inline" onsubmit="return confirm('Remove {{.Title}} from the plan? Later books move one day earlier.')"><button class="sm danger">x</button></form>{{end}}
+      </td>
+    </tr>
+    {{else}}<tr><td colspan="6" class="muted">The plan is empty. It loads from data/books/summaries.yaml on first start, or add books below.</td></tr>{{end}}
+  </table>
+  <form method="post" action="/admin/books" style="margin-top:14px">
+    <h3>Add a book at the end</h3>
+    <div class="fields"><div><label>Title</label><input type="text" name="title" required></div><div><label>Author</label><input type="text" name="author"></div>
+      <div><label>Category</label><input type="text" name="category" list="cats"></div></div>
+    <div class="field"><label>Why this book (goes into the prompt)</label><input type="text" name="why"></div>
+    <button class="primary sm">Add book</button>
+  </form>
+  <datalist id="cats">{{range $d.Categories}}<option value="{{.}}">{{end}}</datalist>
+</div>
+
+<div class="card" id="settings">
+  <h2>How summaries are written</h2>
+  <form method="post" action="/admin/books/settings">
+    <div class="fields">
+      <div><label>Plan start date (day 1)</label><input type="date" name="start_date" value="{{$d.Settings.StartDate}}"></div>
+      <div><label>Length in words (1,500 to 9,000; 5,000 is about 22 minutes)</label><input type="number" name="words" min="1500" max="9000" step="250" value="{{$d.Settings.Words}}"></div>
+    </div>
+    <div class="field"><label>Depth</label><input type="text" name="style" value="{{$d.Settings.Style}}"></div>
+    <div class="field"><label>Language</label><input type="text" name="language" value="{{$d.Settings.Language}}"></div>
+    <div class="field"><label>Priority</label><input type="text" name="priority" value="{{$d.Settings.Priority}}"></div>
+    <div class="field"><label>About you (shapes the examples)</label><textarea name="reader" rows="2">{{$d.Settings.Reader}}</textarea></div>
+    <button class="primary sm">Save settings</button>
+    <span class="muted small" style="margin-left:8px">Changing the start date moves every book's day.</span>
+  </form>
+</div>
+{{end}}

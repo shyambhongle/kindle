@@ -1,4 +1,6 @@
-# One RSS or Atom feed per line. Optional name after a pipe.
+# One RSS or Atom feed per line: url | name | category   (category: general, hn or security)
+# Loaded only on first run; after that manage feeds on the web dashboard's News page.
+https://socket.dev/api/blog/feed.atom | Socket | security
 https://feeds.bbci.co.uk/news/science_and_environment/rss.xml | BBC Science
 https://www.thehindu.com/news/cities/pune/feeder/default.rss | The Hindu Pune
 https://feeds.arstechnica.com/arstechnica/technology-lab | Ars Technica

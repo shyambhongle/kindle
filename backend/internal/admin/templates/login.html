@@ -1,0 +1,11 @@
+{{define "content"}}
+<div class="card">
+  <h1>Dashboard</h1>
+  <p class="muted">Paste the access token from your <code>.env</code> file.</p>
+  {{if .Data.Error}}<div class="flash err">Wrong token.</div>{{end}}
+  <form method="post" action="/admin/login">
+    <div class="field"><label>Access token</label><input type="password" name="token" autofocus autocomplete="current-password"></div>
+    <button class="primary">Log in</button>
+  </form>
+</div>
+{{end}}

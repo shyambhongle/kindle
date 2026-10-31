@@ -1,6 +1,6 @@
 # /etc/systemd/system/dashboard.service
 # sudo useradd -r -s /usr/sbin/nologin dashboard
-# sudo mkdir -p /opt/dashboard && copy: dashboard (binary), client/, data/, .env
+# sudo mkdir -p /opt/dashboard && copy: dashboard (binary), data/, .env
 # sudo chown -R dashboard:dashboard /opt/dashboard && sudo chmod 600 /opt/dashboard/.env
 # sudo systemctl enable --now dashboard
 

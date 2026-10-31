@@ -1,0 +1,38 @@
+{{define "content"}}
+{{$d := .Data}}
+<h1>Settings</h1>
+<p class="muted">Settings live in <code>.env</code> next to the binary. Edit the file and restart the backend; this page only shows what is loaded.</p>
+
+<div class="grid c2">
+  <div class="card">
+    <h2>Backend</h2>
+    <table>
+      <tr><td>Listening on</td><td class="mono">{{$d.Listen}}</td></tr>
+      <tr><td>Database</td><td class="mono">{{$d.Database}}</td></tr>
+      <tr><td>Access token</td><td class="mono">{{$d.Token}}</td></tr>
+      <tr><td>Time zone</td><td>{{$d.TZ}}</td></tr>
+      <tr><td>Collect every</td><td>{{$d.CollectEvery}}</td></tr>
+      <tr><td>Backups</td><td class="mono">{{$d.BackupDir}}</td></tr>
+      <tr><td>Dummy data forced</td><td>{{if $d.Mock}}yes (MOCK=true){{else}}no{{end}}</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>Sources</h2>
+    <table>
+      <tr><td>Notion token</td><td class="mono">{{$d.Notion}}</td><td>{{with index $d.Sources "tasks"}}{{if eq . "live"}}<span class="badge ok">live</span>{{else if eq . "mock"}}<span class="badge">dummy</span>{{else}}<span class="badge err">error</span>{{end}}{{end}}</td></tr>
+      <tr><td>Notion tasks database</td><td class="mono">{{$d.NotionDB}}</td><td></td></tr>
+      <tr><td>Calendar ICS URL</td><td class="mono">{{$d.ICS}}</td><td>{{with index $d.Sources "calendar"}}{{if eq . "live"}}<span class="badge ok">live</span>{{else if eq . "mock"}}<span class="badge">dummy</span>{{else}}<span class="badge err">error</span>{{end}}{{end}}</td></tr>
+      <tr><td>Weather</td><td>{{$d.Weather}}</td><td>{{with index $d.Sources "weather"}}{{if eq . "live"}}<span class="badge ok">live</span>{{else if eq . "mock"}}<span class="badge">dummy</span>{{else}}<span class="badge err">error</span>{{end}}{{end}}</td></tr>
+      <tr><td>News feeds</td><td class="muted">data/news/sources.txt, loaded on first run</td><td>{{with index $d.Sources "news"}}{{if eq . "live"}}<span class="badge ok">live</span>{{else if eq . "mock"}}<span class="badge">dummy</span>{{else}}<span class="badge err">error</span>{{end}}{{end}}</td></tr>
+    </table>
+    <h3 style="margin-top:16px">Google Calendar</h3>
+    <p class="small muted">Google Calendar › Settings › your calendar › Integrate calendar › copy "Secret address in iCal format" into <code>CALENDAR_ICS_URL</code>.</p>
+    <h3 style="margin-top:16px">Notion</h3>
+    <p class="small muted">Create an internal integration, share the tasks database with it, put the token in <code>NOTION_TOKEN</code> and the database id in <code>NOTION_TASKS_DB</code>. Properties: Name, Done, Top, Project, Estimate, Next step.</p>
+  </div>
+</div>
+<div class="card">
+  <h2>Kindle plugin URL</h2>
+  <code class="block">{{$d.KindleURL}}</code>
+</div>
+{{end}}

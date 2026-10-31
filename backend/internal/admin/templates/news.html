@@ -1,0 +1,104 @@
+{{define "content"}}
+{{$d := .Data}}
+<div class="row between" style="margin-bottom:18px">
+  <h1 style="margin:0">News</h1>
+  <div class="row">
+    {{if eq $d.Status "live"}}<span class="badge ok">feeds live</span>{{else if eq $d.Status "mock"}}<span class="badge">dummy data</span>{{else if $d.Status}}<span class="badge warn">{{$d.Status}}</span>{{end}}
+    <form method="post" action="/admin/news/refresh"><button class="primary">Refresh</button></form>
+  </div>
+</div>
+
+<div class="grid c2">
+  <div class="card">
+    <div class="row between"><h2 style="margin:0">Developer security</h2>{{if $d.Alerts}}<span class="badge err">{{$d.Alerts}} alerts</span>{{else}}<span class="badge ok">no alerts</span>{{end}}</div>
+    <p class="muted small" style="margin:4px 0 10px">Compromises in packages, extensions and tooling. Items that read like a real incident are marked as alerts and go to the Kindle's security section.</p>
+    {{range $d.Security}}
+    <div style="padding:8px 0;border-top:1px solid var(--border)">
+      <div>{{if .Alert}}<span class="badge err" style="margin-right:6px">alert</span>{{end}}{{if .Link}}<a href="{{.Link}}" target="_blank" rel="noopener" style="text-decoration:none">{{.Title}}</a>{{else}}{{.Title}}{{end}}</div>
+      <div class="muted small">{{.Source}} · {{ago .PublishedAt}}{{if .Summary}} · {{.Summary}}{{end}}</div>
+    </div>
+    {{else}}<p class="muted small">Nothing yet. Add a security feed below and refresh.</p>{{end}}
+  </div>
+  <div class="card">
+    <h2>Tech, AI and climate</h2>
+    <p class="muted small" style="margin:4px 0 10px">Curated by the keyword filter below. The Kindle home screen shows the top three in its News column; the rest are on its News page.</p>
+    {{range $d.General}}
+    <div style="padding:8px 0;border-top:1px solid var(--border)">
+      <div>{{if .Link}}<a href="{{.Link}}" target="_blank" rel="noopener" style="text-decoration:none">{{.Title}}</a>{{else}}{{.Title}}{{end}}</div>
+      <div class="muted small">{{.Source}} · {{ago .PublishedAt}}{{if .Summary}} · {{.Summary}}{{end}}</div>
+    </div>
+    {{else}}<p class="muted small">Nothing yet.</p>{{end}}
+  </div>
+</div>
+
+<div class="card">
+  <h2>Hacker News</h2>
+  <p class="muted small" style="margin:4px 0 10px">Its own category, so the Kindle home screen can give it a column of its own next to the general feeds. Still filtered by the keywords below.</p>
+  {{range $d.HN}}
+  <div style="padding:8px 0;border-top:1px solid var(--border)">
+    <div>{{if .Link}}<a href="{{.Link}}" target="_blank" rel="noopener" style="text-decoration:none">{{.Title}}</a>{{else}}{{.Title}}{{end}}</div>
+    <div class="muted small">{{.Source}} &middot; {{ago .PublishedAt}}{{if .Summary}} &middot; {{.Summary}}{{end}}</div>
+  </div>
+  {{else}}<p class="muted small">Nothing yet. Set a Hacker News feed's category to "hacker news" below and refresh.</p>{{end}}
+</div>
+
+<div class="grid c2">
+  <div class="card">
+    <h2>Feeds</h2>
+    <table>
+      <tr><th>Feed</th><th>Category</th><th>Filter</th><th>Max</th><th>Last fetch</th><th></th></tr>
+      {{range $d.Feeds}}
+      <tr class="{{if not .Enabled}}past{{end}}">
+        <td><strong>{{if .Name}}{{.Name}}{{else}}{{.URL}}{{end}}</strong><div class="muted small mono" style="word-break:break-all">{{.URL}}</div></td>
+        <td>
+          <form method="post" action="/admin/news/feeds/update" class="inline"><input type="hidden" name="url" value="{{.URL}}"><input type="hidden" name="action" value="category">
+            <select name="category" onchange="this.form.submit()" style="min-width:110px"><option value="general" {{if eq .Category "general"}}selected{{end}}>general</option><option value="hn" {{if eq .Category "hn"}}selected{{end}}>hacker news</option><option value="security" {{if eq .Category "security"}}selected{{end}}>security</option></select></form>
+        </td>
+        <td>{{if ne .Category "security"}}<form method="post" action="/admin/news/feeds/update" class="inline"><input type="hidden" name="url" value="{{.URL}}"><input type="hidden" name="action" value="mode">
+            <select name="mode" onchange="this.form.submit()" style="min-width:110px" title="keywords: keep only items matching the include list. all: keep everything except excluded topics"><option value="keywords" {{if eq .Mode "keywords"}}selected{{end}}>keywords</option><option value="all" {{if eq .Mode "all"}}selected{{end}}>all</option></select></form>{{else}}<span class="muted small">none</span>{{end}}</td>
+        <td><form method="post" action="/admin/news/feeds/update" class="inline"><input type="hidden" name="url" value="{{.URL}}"><input type="hidden" name="action" value="max">
+            <input type="number" name="max_items" value="{{.MaxItems}}" min="1" max="20" style="width:64px" onchange="this.form.submit()"></form></td>
+        <td class="small">{{if .LastFetch}}{{ago .LastFetch}}{{if .LastError}}<div style="color:var(--err)">{{.LastError}}</div>{{else}}<div class="muted">{{.LastItems}} items</div>{{end}}{{else}}<span class="muted">never</span>{{end}}</td>
+        <td style="white-space:nowrap;text-align:right">
+          <form method="post" action="/admin/news/feeds/update" class="inline"><input type="hidden" name="url" value="{{.URL}}"><input type="hidden" name="action" value="toggle"><button class="sm">{{if .Enabled}}disable{{else}}enable{{end}}</button></form>
+          <form method="post" action="/admin/news/feeds/update" class="inline" onsubmit="return confirm('Remove this feed?')"><input type="hidden" name="url" value="{{.URL}}"><input type="hidden" name="action" value="delete"><button class="sm danger">remove</button></form>
+        </td>
+      </tr>
+      {{else}}<tr><td colspan="6" class="muted">No feeds.</td></tr>{{end}}
+    </table>
+  </div>
+  <div class="card">
+    <h2>Add a feed</h2>
+    <form method="post" action="/admin/news/feeds">
+      <div class="field"><label>RSS or Atom URL</label><input type="text" name="url" placeholder="https://socket.dev/api/blog/feed.atom" required></div>
+      <div class="fields">
+        <div><label>Name (optional)</label><input type="text" name="name" placeholder="Socket"></div>
+        <div><label>Category</label><select name="category"><option value="general">general</option><option value="hn">hacker news</option><option value="security">security</option></select></div>
+      </div>
+      <button class="primary">Add and fetch</button>
+    </form>
+    <p class="muted small" style="margin-top:10px">Other good security feeds, if you want more than Socket: the GitHub Security Blog, the npm blog, PyPI's blog, and vendor advisories you depend on. Keep it to a few; the point is to notice, not to read everything.</p>
+  </div>
+</div>
+
+<div class="grid c2">
+  <div class="card">
+    <h2>Topic filter</h2>
+    <p class="muted small">One keyword per line, matched at the start of a word, case ignored. Exclude always wins. Feeds set to "keywords" must match an include word; feeds set to "all" skip that check but still obey the exclude list. Security feeds are never filtered.</p>
+    <form method="post" action="/admin/news/filter">
+      <div class="grid c2">
+        <div class="field"><label>Include (any of these keeps an item)</label><textarea name="include" rows="14" class="mono">{{$d.Include}}</textarea></div>
+        <div class="field"><label>Exclude (any of these drops an item)</label><textarea name="exclude" rows="14" class="mono">{{$d.Exclude}}</textarea></div>
+      </div>
+      <div class="row"><button class="primary">Save and re-read feeds</button><button name="reset" value="1" onclick="return confirm('Replace both lists with the defaults?')">Reset to defaults</button></div>
+    </form>
+  </div>
+  <div class="card">
+    <h2>Muted on the last run <span class="badge">{{len $d.Muted}}</span></h2>
+    <p class="muted small">What the filter dropped, and why. If something here should have stayed, add a word from its title to the include list; if something got through that should not have, add a word to exclude.</p>
+    {{range $d.Muted}}
+    <div style="padding:6px 0;border-top:1px solid var(--border)" class="small"><span class="badge" style="margin-right:6px">{{.Reason}}</span>{{.Title}} <span class="muted">· {{.Source}}</span></div>
+    {{else}}<p class="muted small">Nothing muted.</p>{{end}}
+  </div>
+</div>
+{{end}}

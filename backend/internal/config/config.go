@@ -18,7 +18,6 @@ type Config struct {
 	DatabaseURL     string        // postgres://user:pass@localhost:5432/dashboard
 	AccessToken     string        // long random string, part of every URL
 	DataDir         string        // folder with the seed datasets
-	ClientDir       string        // folder with index.html
 	Timezone        *time.Location
 	CollectEvery    time.Duration
 	Latitude        float64
@@ -26,8 +25,17 @@ type Config struct {
 	WeatherLocation string
 	NotionToken     string
 	NotionTasksDB   string
+	NotionStatus    map[string]string // property, top, next, backlog, hidden, done
+	NotionBaseURL   string            // override for tests
+	WeatherBaseURL  string            // override for tests (forecast and geocoding)
 	CalendarICSURL  string
 	GuitarStartDate string
+	AnthropicKey    string
+	AnthropicModel  string
+	AnthropicURL    string // override for tests
+	GermanStartDate string // overrides the course file's start_date when set
+	BackupDir       string // where pg_dump backups go
+	DailyBackup     bool
 	Mock            bool // force dummy data for every external source
 }
 
@@ -41,12 +49,27 @@ func Load() (*Config, error) {
 		DatabaseURL:     env("DATABASE_URL", "postgres://dashboard:dashboard@localhost:5432/dashboard?sslmode=disable"),
 		AccessToken:     env("ACCESS_TOKEN", ""),
 		DataDir:         env("DATA_DIR", "data"),
-		ClientDir:       env("CLIENT_DIR", "client"),
 		WeatherLocation: env("WEATHER_LOCATION", "Pune"),
 		NotionToken:     env("NOTION_TOKEN", ""),
-		NotionTasksDB:   env("NOTION_TASKS_DB", ""),
+		NotionTasksDB:   strings.ReplaceAll(env("NOTION_TASKS_DB", ""), "-", ""),
+		NotionBaseURL:   env("NOTION_BASE_URL", "https://api.notion.com"),
+		WeatherBaseURL:  env("WEATHER_BASE_URL", ""),
+		NotionStatus: map[string]string{
+			"property": env("NOTION_STATUS_PROP", "Status"),
+			"top":      env("NOTION_STATUS_TOP", "Priority"),
+			"next":     env("NOTION_STATUS_NEXT", "In Progress"),
+			"backlog":  env("NOTION_STATUS_BACKLOG", "All Task"),
+			"hidden":   env("NOTION_STATUS_HIDDEN", "Parked"),
+			"done":     env("NOTION_STATUS_DONE", "Done"),
+		},
 		CalendarICSURL:  env("CALENDAR_ICS_URL", ""),
+		AnthropicKey:    env("ANTHROPIC_API_KEY", ""),
+		AnthropicModel:  env("ANTHROPIC_MODEL", "claude-sonnet-4-5"),
+		AnthropicURL:    env("ANTHROPIC_BASE_URL", ""),
+		GermanStartDate: env("GERMAN_START_DATE", ""),
 		GuitarStartDate: env("GUITAR_START_DATE", ""),
+		BackupDir:       env("BACKUP_DIR", "backups"),
+		DailyBackup:     env("DAILY_BACKUP", "true") != "false",
 		Mock:            env("MOCK", "false") == "true",
 	}
 	var err error
