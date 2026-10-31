@@ -1,0 +1,332 @@
+{
+  "generatedAt": "2026-10-30T20:20:25.514Z",
+  "weather": {
+    "tempC": 27,
+    "hiC": 31,
+    "loC": 21,
+    "summary": "Partly cloudy",
+    "location": "Pune"
+  },
+  "events": [
+    {
+      "id": "e1",
+      "title": "ForestCloud sync with Arnold",
+      "start": "2026-10-31T05:30:00.000Z",
+      "end": "2026-10-31T06:00:00.000Z",
+      "location": "Meet"
+    },
+    {
+      "id": "e2",
+      "title": "Guitar lesson",
+      "start": "2026-10-31T12:30:00.000Z",
+      "end": "2026-10-31T13:30:00.000Z",
+      "location": "Home"
+    },
+    {
+      "id": "e3",
+      "title": "Dentist",
+      "start": "2026-11-02T04:00:00.000Z",
+      "end": "2026-11-02T04:45:00.000Z",
+      "location": "Clinic"
+    },
+    {
+      "id": "e4",
+      "title": "Academy planning call",
+      "start": "2026-11-04T08:30:00.000Z",
+      "end": "2026-11-04T09:30:00.000Z",
+      "location": "Zoom"
+    },
+    {
+      "id": "e5",
+      "title": "German class",
+      "start": "2026-11-07T13:30:00.000Z",
+      "end": "2026-11-07T15:00:00.000Z",
+      "location": "Online"
+    },
+    {
+      "id": "e6",
+      "title": "Flight to Mumbai",
+      "start": "2026-11-12T01:40:00.000Z",
+      "end": "2026-11-12T03:00:00.000Z",
+      "location": "PNQ"
+    },
+    {
+      "id": "e7",
+      "title": "Team retro",
+      "start": "2026-10-28T10:30:00.000Z",
+      "end": "2026-10-28T11:30:00.000Z",
+      "location": "Meet"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "t1",
+      "title": "Write backend API spec for dashboard",
+      "project": "Kindle app",
+      "estimateMin": 90,
+      "done": false,
+      "top": true,
+      "nextStep": "Open the Notion page and list the 6 endpoints"
+    },
+    {
+      "id": "t2",
+      "title": "Review TreeMapper pull request #214",
+      "project": "ForestCloud",
+      "estimateMin": 45,
+      "done": true,
+      "top": true,
+      "nextStep": "Read the diff of sync.ts first"
+    },
+    {
+      "id": "t3",
+      "title": "Reply to Academy host in Nagpur",
+      "project": "Academies",
+      "estimateMin": 15,
+      "done": false,
+      "top": true,
+      "nextStep": "Confirm the date and send the checklist"
+    },
+    {
+      "id": "t4",
+      "title": "Order new strings for the guitar",
+      "project": "Personal",
+      "estimateMin": 10,
+      "done": false,
+      "top": false,
+      "nextStep": "Amazon basket already has them"
+    },
+    {
+      "id": "t5",
+      "title": "Book train for Diwali trip",
+      "project": "Personal",
+      "estimateMin": 20,
+      "done": false,
+      "top": false,
+      "nextStep": "Check 12 Nov evening trains"
+    },
+    {
+      "id": "t6",
+      "title": "Prepare slides for Monday standup",
+      "project": "ForestCloud",
+      "estimateMin": 30,
+      "done": false,
+      "top": false,
+      "nextStep": "Copy last week's deck"
+    }
+  ],
+  "practice": {
+    "guitar": {
+      "doneToday": false,
+      "last7": [
+        1,
+        1,
+        0,
+        1,
+        1,
+        1,
+        0
+      ],
+      "current": "Lesson 12: Barre chords",
+      "today": "F major shape 10 min, then G to F switching drill",
+      "plan": [
+        "Warm up: chromatic run, 3 min",
+        "F barre: hold and release, 10 reps",
+        "Switch G to F to C, 60 bpm, 5 min",
+        "Play 'Wonderwall' chorus slowly"
+      ],
+      "notes": "Thumb lower on the neck. Keep the wrist straight."
+    },
+    "german": {
+      "doneToday": true,
+      "last7": [
+        1,
+        1,
+        1,
+        1,
+        0,
+        1,
+        1
+      ],
+      "level": "A2",
+      "dueReviews": 14,
+      "sentences": [
+        {
+          "de": "Ich habe heute keine Zeit, aber morgen passt es gut.",
+          "en": "I have no time today, but tomorrow works well."
+        },
+        {
+          "de": "Kannst du mir bitte das Salz geben?",
+          "en": "Can you please pass me the salt?"
+        },
+        {
+          "de": "Wir pflanzen jedes Jahr tausend Bäume.",
+          "en": "We plant a thousand trees every year."
+        },
+        {
+          "de": "Der Zug hat zwanzig Minuten Verspätung.",
+          "en": "The train is twenty minutes late."
+        }
+      ],
+      "review": [
+        {
+          "de": "die Verspätung",
+          "en": "the delay"
+        },
+        {
+          "de": "pflanzen",
+          "en": "to plant"
+        },
+        {
+          "de": "passen",
+          "en": "to fit, to suit"
+        },
+        {
+          "de": "die Werkstatt",
+          "en": "the workshop"
+        },
+        {
+          "de": "der Wald",
+          "en": "the forest"
+        },
+        {
+          "de": "erinnern",
+          "en": "to remind, to remember"
+        }
+      ]
+    },
+    "vocab": {
+      "doneToday": false,
+      "last7": [
+        0,
+        1,
+        1,
+        1,
+        1,
+        0,
+        1
+      ],
+      "dueReviews": 9,
+      "words": [
+        {
+          "word": "laconic",
+          "pos": "adjective",
+          "definition": "Using very few words.",
+          "example": "His laconic reply was just 'Fine.'"
+        },
+        {
+          "word": "ephemeral",
+          "pos": "adjective",
+          "definition": "Lasting for a very short time.",
+          "example": "Fame on social media is ephemeral."
+        },
+        {
+          "word": "candor",
+          "pos": "noun",
+          "definition": "Honest and direct speech.",
+          "example": "She spoke with candor about the delay."
+        },
+        {
+          "word": "prudent",
+          "pos": "adjective",
+          "definition": "Careful and sensible about the future.",
+          "example": "It is prudent to save first."
+        }
+      ],
+      "review": [
+        {
+          "word": "austere",
+          "definition": "Severe or strict; plain, without comfort."
+        },
+        {
+          "word": "tenuous",
+          "definition": "Very weak or slight."
+        },
+        {
+          "word": "pragmatic",
+          "definition": "Dealing with things in a practical way."
+        },
+        {
+          "word": "verbose",
+          "definition": "Using more words than needed."
+        }
+      ]
+    },
+    "reading": {
+      "doneToday": false,
+      "last7": [
+        1,
+        0,
+        1,
+        1,
+        1,
+        0,
+        0
+      ],
+      "book": {
+        "title": "Deep Work",
+        "author": "Cal Newport",
+        "page": 143,
+        "pages": 296,
+        "startedOn": "2026-10-12"
+      },
+      "sessions": [
+        {
+          "date": "2026-10-30",
+          "pages": 18,
+          "minutes": 25
+        },
+        {
+          "date": "2026-10-28",
+          "pages": 22,
+          "minutes": 30
+        },
+        {
+          "date": "2026-10-27",
+          "pages": 12,
+          "minutes": 15
+        },
+        {
+          "date": "2026-10-26",
+          "pages": 25,
+          "minutes": 35
+        }
+      ],
+      "next": [
+        {
+          "title": "Atomic Habits",
+          "author": "James Clear"
+        },
+        {
+          "title": "Four Thousand Weeks",
+          "author": "Oliver Burkeman"
+        }
+      ]
+    }
+  },
+  "news": [
+    {
+      "id": "n1",
+      "source": "Reuters",
+      "title": "EU agrees on new forest restoration targets for 2030",
+      "summary": "Member states back a plan to restore 20 percent of degraded land, with funding tied to monitoring."
+    },
+    {
+      "id": "n2",
+      "source": "The Hindu",
+      "title": "Pune metro line 3 to open first stretch in December",
+      "summary": "The Hinjewadi to Shivajinagar corridor will start partial service."
+    },
+    {
+      "id": "n3",
+      "source": "Ars Technica",
+      "title": "E-ink maker shows 300 ppi color panel with faster refresh",
+      "summary": "The new panel halves refresh time compared to the current generation."
+    },
+    {
+      "id": "n4",
+      "source": "BBC",
+      "title": "Scientists map tree cover change across the Western Ghats",
+      "summary": "A ten year satellite study shows gains in protected areas and losses near cities."
+    }
+  ]
+}

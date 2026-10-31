@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Dashboard</title>
+<style>
+/* ---------- base: e-ink friendly, no gradients, no animation ---------- */
+html, body { margin: 0; padding: 0; background: #fff; color: #000; overflow: hidden; }
+body { font-family: Georgia, "Times New Roman", serif; -webkit-text-size-adjust: none; -webkit-tap-highlight-color: rgba(0,0,0,0); }
+.sans { font-family: Helvetica, Arial, sans-serif; }
+
+/* design canvas: 1448 x 1072 (landscape), rotated and scaled to fit the device */
+#stage { position: absolute; left: 0; top: 0; width: 1448px; height: 1072px; background: #fff; overflow: hidden; -webkit-transform-origin: 0 0; transform-origin: 0 0; }
+.page { position: absolute; left: 0; top: 0; width: 1448px; height: 1072px; display: none; }
+.page.on { display: block; }
+
+/* top bar */
+.topbar { position: absolute; left: 0; top: 0; width: 1448px; height: 84px; border-bottom: 4px solid #000; }
+.topbar .date { position: absolute; left: 24px; top: 16px; font-size: 40px; font-weight: bold; }
+.topbar .weather { position: absolute; left: 640px; top: 20px; font-size: 32px; }
+.topbar .sync { position: absolute; right: 190px; top: 28px; font-size: 24px; font-family: Helvetica, Arial, sans-serif; }
+.btn { position: absolute; border: 3px solid #000; background: #fff; color: #000; font-family: Helvetica, Arial, sans-serif; font-size: 26px; text-align: center; line-height: 56px; height: 56px; }
+.btn.dark { background: #000; color: #fff; }
+.topbar .refresh { right: 24px; top: 12px; width: 140px; }
+.topbar .back { left: 24px; top: 12px; width: 150px; }
+.topbar .title { position: absolute; left: 200px; top: 16px; font-size: 40px; font-weight: bold; }
+
+/* panels */
+.panel { position: absolute; border: 3px solid #000; background: #fff; overflow: hidden; }
+.label { font-family: Helvetica, Arial, sans-serif; font-size: 22px; letter-spacing: 2px; text-transform: uppercase; }
+.panel .head { position: absolute; left: 0; top: 0; right: 0; height: 48px; line-height: 48px; padding: 0 16px; border-bottom: 3px solid #000; background: #000; color: #fff; }
+.panel .head .right { position: absolute; right: 16px; top: 0; }
+
+/* calendar */
+#cal { left: 24px; top: 104px; width: 440px; height: 596px; }
+#cal table { position: absolute; left: 10px; top: 60px; width: 420px; border-collapse: collapse; font-family: Helvetica, Arial, sans-serif; }
+#cal th { font-size: 20px; font-weight: normal; height: 36px; color: #000; border-bottom: 2px solid #000; }
+#cal td { width: 60px; height: 76px; text-align: center; vertical-align: top; font-size: 28px; padding-top: 8px; }
+#cal td .n { display: inline-block; width: 46px; height: 46px; line-height: 46px; }
+#cal td.today .n { background: #000; color: #fff; font-weight: bold; }
+#cal td.other { color: #888; }
+#cal td .dot { display: block; width: 10px; height: 10px; margin: 2px auto 0 auto; background: #000; }
+#cal td .nodot { display: block; width: 10px; height: 10px; margin: 2px auto 0 auto; }
+
+/* next up */
+#next { left: 24px; top: 716px; width: 440px; height: 130px; }
+#next .ev { position: absolute; left: 16px; top: 56px; right: 16px; font-size: 30px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#next .when { position: absolute; left: 16px; top: 94px; font-size: 24px; font-family: Helvetica, Arial, sans-serif; }
+
+/* tasks */
+#tasks { left: 488px; top: 104px; width: 560px; height: 742px; }
+.task { position: absolute; left: 0; right: 0; height: 180px; border-bottom: 3px solid #000; }
+.task .box { position: absolute; left: 18px; top: 22px; width: 56px; height: 56px; border: 4px solid #000; font-size: 46px; line-height: 54px; text-align: center; font-family: Helvetica, Arial, sans-serif; }
+.task.done .box { background: #000; color: #fff; }
+.task .t { position: absolute; left: 98px; top: 18px; right: 16px; font-size: 34px; line-height: 42px; height: 84px; overflow: hidden; }
+.task.done .t { text-decoration: line-through; color: #666; }
+.task .m { position: absolute; left: 98px; top: 120px; right: 16px; font-size: 24px; font-family: Helvetica, Arial, sans-serif; color: #333; white-space: nowrap; overflow: hidden; }
+.task .step { position: absolute; left: 98px; top: 148px; right: 16px; font-size: 22px; font-family: Helvetica, Arial, sans-serif; color: #000; white-space: nowrap; overflow: hidden; }
+#tasks .foot { position: absolute; left: 0; right: 0; bottom: 0; height: 46px; line-height: 46px; padding: 0 16px; font-size: 22px; font-family: Helvetica, Arial, sans-serif; }
+
+/* practice tiles */
+.tile { position: absolute; left: 1072px; width: 352px; height: 172px; }
+.tile .name { position: absolute; left: 16px; top: 12px; font-size: 30px; font-weight: bold; }
+.tile .chk { position: absolute; right: 14px; top: 10px; width: 44px; height: 44px; border: 4px solid #000; font-size: 36px; line-height: 42px; text-align: center; font-family: Helvetica, Arial, sans-serif; }
+.tile.done .chk { background: #000; color: #fff; }
+.tile .sub { position: absolute; left: 16px; top: 58px; right: 16px; font-size: 24px; line-height: 30px; height: 60px; overflow: hidden; font-family: Helvetica, Arial, sans-serif; color: #222; }
+.week { position: absolute; left: 16px; top: 128px; height: 28px; width: 330px; }
+.week span { display: inline-block; width: 20px; height: 20px; border: 3px solid #000; margin-right: 4px; vertical-align: top; }
+.week span.y { background: #000; }
+.weekrow { position: absolute; left: 20px; bottom: 0; height: 30px; width: 340px; }
+.weekrow .week { position: relative; top: 0; left: 0; }
+.week .lbl { position: absolute; left: 215px; top: 1px; font-size: 20px; font-family: Helvetica, Arial, sans-serif; white-space: nowrap; }
+.bar { position: absolute; left: 16px; top: 128px; width: 160px; height: 22px; border: 3px solid #000; }
+.bar div { height: 22px; background: #000; }
+.barlbl { position: absolute; left: 192px; top: 126px; font-size: 20px; line-height: 30px; font-family: Helvetica, Arial, sans-serif; white-space: nowrap; }
+
+/* learn strip and news */
+#learn { left: 24px; top: 870px; width: 1024px; height: 178px; }
+#learn .de { position: absolute; left: 16px; top: 14px; width: 560px; }
+#learn .en { position: absolute; left: 616px; top: 14px; right: 16px; }
+#learn .big { font-size: 34px; line-height: 42px; font-weight: bold; margin-top: 6px; }
+#learn .small { font-size: 24px; line-height: 30px; margin-top: 6px; color: #222; }
+#learn .pos { font-style: italic; font-weight: normal; font-size: 24px; }
+#news { left: 1072px; top: 870px; width: 352px; height: 178px; }
+#news .h { position: absolute; left: 14px; right: 14px; font-size: 22px; line-height: 27px; height: 54px; overflow: hidden; }
+#news .src { font-family: Helvetica, Arial, sans-serif; font-size: 18px; color: #444; }
+
+/* detail pages */
+.list { position: absolute; left: 24px; top: 104px; width: 1400px; bottom: 24px; }
+.row { position: relative; border-bottom: 3px solid #000; padding: 16px 20px; font-size: 32px; line-height: 40px; }
+.row .sm { font-size: 24px; font-family: Helvetica, Arial, sans-serif; color: #333; margin-top: 4px; }
+.row .box { position: absolute; left: 20px; top: 18px; width: 48px; height: 48px; border: 4px solid #000; font-size: 40px; line-height: 46px; text-align: center; font-family: Helvetica, Arial, sans-serif; }
+.row.done .box { background: #000; color: #fff; }
+.row.chk { padding-left: 96px; }
+.row.done { color: #666; text-decoration: line-through; }
+.section { font-family: Helvetica, Arial, sans-serif; font-size: 22px; letter-spacing: 2px; text-transform: uppercase; background: #000; color: #fff; padding: 8px 20px; margin-top: 24px; }
+.section:first-child { margin-top: 0; }
+.two { position: absolute; top: 104px; bottom: 100px; overflow: hidden; }
+.two.l { left: 24px; width: 700px; }
+.two.r { left: 748px; width: 676px; }
+.pager { bottom: 24px; width: 220px; }
+.pager.prev { left: 24px; }
+.pager.next { right: 24px; }
+.center { position: absolute; left: 0; right: 0; top: 24px; text-align: center; font-size: 34px; font-weight: bold; }
+.bigtext { font-size: 40px; line-height: 52px; padding: 24px 20px; }
+.midtext { font-size: 28px; line-height: 38px; padding: 0 20px 20px 20px; color: #222; }
+.stat { position: absolute; font-family: Helvetica, Arial, sans-serif; }
+.stat .v { font-size: 64px; font-weight: bold; line-height: 70px; }
+.stat .k { font-size: 22px; letter-spacing: 2px; text-transform: uppercase; white-space: nowrap; }
+.readbar { position: absolute; left: 20px; right: 20px; height: 40px; border: 4px solid #000; }
+.readbar div { height: 40px; background: #000; }
+
+/* e-ink ghost clearing flash */
+#flash { position: absolute; left: 0; top: 0; width: 100%; height: 100%; background: #000; display: none; z-index: 99; }
+#err { position: absolute; left: 24px; top: 1020px; font-size: 22px; font-family: Helvetica, Arial, sans-serif; color: #000; display: none; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <!-- HOME -->
+  <div class="page on" id="p-home">
+    <div class="topbar">
+      <div class="date" id="h-date"></div>
+      <div class="weather" id="h-weather"></div>
+      <div class="sync" id="h-sync"></div>
+      <div class="btn refresh" id="h-refresh" data-act="refresh">Refresh</div>
+    </div>
+    <div class="panel" id="cal"><div class="head label" id="cal-head"></div><table id="cal-table"></table></div>
+    <div class="panel" id="next"><div class="head label">Next up</div><div class="ev" id="next-ev"></div><div class="when" id="next-when"></div></div>
+    <div class="panel" id="tasks"><div class="head label">Top 3 today<span class="right" id="tasks-done"></span></div><div id="tasks-list"></div><div class="foot" id="tasks-foot"></div></div>
+    <div id="tiles"></div>
+    <div class="panel" id="learn">
+      <div class="de" id="learn-de"><div class="label">German today</div><div class="big" id="de-text"></div><div class="small" id="de-trans"></div></div>
+      <div class="en" id="learn-en"><div class="label">Word of the day</div><div class="big" id="en-word"></div><div class="small" id="en-def"></div></div>
+    </div>
+    <div class="panel" id="news"><div class="head label">News</div><div id="news-list"></div></div>
+    <div id="err"></div>
+  </div>
+
+  <!-- DETAIL PAGES (filled by JS) -->
+  <div class="page" id="p-tasks"></div>
+  <div class="page" id="p-day"></div>
+  <div class="page" id="p-guitar"></div>
+  <div class="page" id="p-german"></div>
+  <div class="page" id="p-vocab"></div>
+  <div class="page" id="p-reading"></div>
+  <div class="page" id="p-news"></div>
+  <div id="flash"></div>
+</div>
+
+<script>
+/* ======================= CONFIG ======================= */
+var CONFIG = {
+  apiUrl: "",            // "" = built-in mock data. The backend injects "/d/<token>/api" here when it serves this file.
+  landscape: true,       // rotate the 1448x1072 canvas to fit the portrait screen
+  rotation: 90,          // 90 = bezel on the left, -90 = bezel on the right
+  showNews: true,        // set false to hide the news block (learn strip then fills the width)
+  flashOnRefresh: true,  // black flash before redraw, clears e-ink ghosting
+  weekStartsMonday: true
+};
+
+/* ======================= MOCK DATA ======================= */
+/* Same shape your backend should return. Dates in mock are relative to today. */
+function mockData() {
+  function iso(dayOffset, hm) {
+    var d = new Date(); d.setDate(d.getDate() + dayOffset);
+    var p = hm.split(":"); d.setHours(parseInt(p[0],10), parseInt(p[1],10), 0, 0);
+    return d.toISOString();
+  }
+  return {
+    generatedAt: new Date().toISOString(),
+    weather: { tempC: 27, hiC: 31, loC: 21, summary: "Partly cloudy", location: "Pune" },
+    events: [
+      { id: "e1", title: "ForestCloud sync with Arnold", start: iso(0,"11:00"), end: iso(0,"11:30"), location: "Meet" },
+      { id: "e2", title: "Guitar lesson", start: iso(0,"18:00"), end: iso(0,"19:00"), location: "Home" },
+      { id: "e3", title: "Dentist", start: iso(2,"09:30"), end: iso(2,"10:15"), location: "Clinic" },
+      { id: "e4", title: "Academy planning call", start: iso(4,"14:00"), end: iso(4,"15:00"), location: "Zoom" },
+      { id: "e5", title: "German class", start: iso(7,"19:00"), end: iso(7,"20:30"), location: "Online" },
+      { id: "e6", title: "Flight to Mumbai", start: iso(12,"07:10"), end: iso(12,"08:30"), location: "PNQ" },
+      { id: "e7", title: "Team retro", start: iso(-3,"16:00"), end: iso(-3,"17:00"), location: "Meet" }
+    ],
+    tasks: [
+      { id: "t1", title: "Write backend API spec for dashboard", project: "Kindle app", estimateMin: 90, done: false, top: true, nextStep: "Open the Notion page and list the 6 endpoints" },
+      { id: "t2", title: "Review TreeMapper pull request #214", project: "ForestCloud", estimateMin: 45, done: true, top: true, nextStep: "Read the diff of sync.ts first" },
+      { id: "t3", title: "Reply to Academy host in Nagpur", project: "Academies", estimateMin: 15, done: false, top: true, nextStep: "Confirm the date and send the checklist" },
+      { id: "t4", title: "Order new strings for the guitar", project: "Personal", estimateMin: 10, done: false, top: false, nextStep: "Amazon basket already has them" },
+      { id: "t5", title: "Book train for Diwali trip", project: "Personal", estimateMin: 20, done: false, top: false, nextStep: "Check 12 Nov evening trains" },
+      { id: "t6", title: "Prepare slides for Monday standup", project: "ForestCloud", estimateMin: 30, done: false, top: false, nextStep: "Copy last week's deck" }
+    ],
+    practice: {
+      guitar: { doneToday: false, last7: [1,1,0,1,1,1,0], current: "Lesson 12: Barre chords",
+        today: "F major shape 10 min, then G to F switching drill",
+        plan: ["Warm up: chromatic run, 3 min", "F barre: hold and release, 10 reps", "Switch G to F to C, 60 bpm, 5 min", "Play 'Wonderwall' chorus slowly"],
+        notes: "Thumb lower on the neck. Keep the wrist straight." },
+      german: { doneToday: true, last7: [1,1,1,1,0,1,1], level: "A2", dueReviews: 14,
+        sentences: [
+          { de: "Ich habe heute keine Zeit, aber morgen passt es gut.", en: "I have no time today, but tomorrow works well." },
+          { de: "Kannst du mir bitte das Salz geben?", en: "Can you please pass me the salt?" },
+          { de: "Wir pflanzen jedes Jahr tausend Bäume.", en: "We plant a thousand trees every year." },
+          { de: "Der Zug hat zwanzig Minuten Verspätung.", en: "The train is twenty minutes late." }
+        ],
+        review: [
+          { de: "die Verspätung", en: "the delay" }, { de: "pflanzen", en: "to plant" }, { de: "passen", en: "to fit, to suit" },
+          { de: "die Werkstatt", en: "the workshop" }, { de: "der Wald", en: "the forest" }, { de: "erinnern", en: "to remind, to remember" }
+        ] },
+      vocab: { doneToday: false, last7: [0,1,1,1,1,0,1], dueReviews: 9,
+        words: [
+          { word: "laconic", pos: "adjective", definition: "Using very few words.", example: "His laconic reply was just 'Fine.'" },
+          { word: "ephemeral", pos: "adjective", definition: "Lasting for a very short time.", example: "Fame on social media is ephemeral." },
+          { word: "candor", pos: "noun", definition: "Honest and direct speech.", example: "She spoke with candor about the delay." },
+          { word: "prudent", pos: "adjective", definition: "Careful and sensible about the future.", example: "It is prudent to save first." }
+        ],
+        review: [
+          { word: "austere", definition: "Severe or strict; plain, without comfort." }, { word: "tenuous", definition: "Very weak or slight." },
+          { word: "pragmatic", definition: "Dealing with things in a practical way." }, { word: "verbose", definition: "Using more words than needed." }
+        ] },
+      reading: { doneToday: false, last7: [1,0,1,1,1,0,0],
+        book: { title: "Deep Work", author: "Cal Newport", page: 143, pages: 296, startedOn: "2026-10-12" },
+        sessions: [ { date: "2026-10-30", pages: 18, minutes: 25 }, { date: "2026-10-28", pages: 22, minutes: 30 }, { date: "2026-10-27", pages: 12, minutes: 15 }, { date: "2026-10-26", pages: 25, minutes: 35 } ],
+        next: [ { title: "Atomic Habits", author: "James Clear" }, { title: "Four Thousand Weeks", author: "Oliver Burkeman" } ] }
+    },
+    news: [
+      { id: "n1", source: "Reuters", title: "EU agrees on new forest restoration targets for 2030", summary: "Member states back a plan to restore 20 percent of degraded land, with funding tied to monitoring." },
+      { id: "n2", source: "The Hindu", title: "Pune metro line 3 to open first stretch in December", summary: "The Hinjewadi to Shivajinagar corridor will start partial service." },
+      { id: "n3", source: "Ars Technica", title: "E-ink maker shows 300 ppi color panel with faster refresh", summary: "The new panel halves refresh time compared to the current generation." },
+      { id: "n4", source: "BBC", title: "Scientists map tree cover change across the Western Ghats", summary: "A ten year satellite study shows gains in protected areas and losses near cities." }
+    ]
+  };
+}
+
+/* ======================= STATE ======================= */
+var DATA = null;
+var refreshCount = 0;
+var dayCursor = 0;         // offset from today on the day page
+var lastSync = null;
+var syncOk = true;
+
+/* ======================= HELPERS ======================= */
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s === undefined || s === null ? "" : s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function pad2(n) { return (n < 10 ? "0" : "") + n; }
+var DAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+var DAYS3 = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+var MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+var MONTHS3 = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function parseDate(s) {
+  // ISO with or without zone; old WebKit may not parse all forms, so do it by hand
+  var m = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?(Z|[+-]\d{2}:?\d{2})?)?/.exec(s);
+  if (!m) return new Date(s);
+  if (m[7]) {
+    var ms = Date.UTC(+m[1], +m[2]-1, +m[3], +(m[4]||0), +(m[5]||0), +(m[6]||0));
+    if (m[7] !== "Z") { var sign = m[7].charAt(0) === "-" ? -1 : 1; var z = m[7].replace(/[:+-]/g,""); ms -= sign * (parseInt(z.substr(0,2),10)*60 + parseInt(z.substr(2,2),10)) * 60000; }
+    return new Date(ms);
+  }
+  return new Date(+m[1], +m[2]-1, +m[3], +(m[4]||0), +(m[5]||0), +(m[6]||0));
+}
+function sameDay(a, b) { return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }
+function hm(d) { return pad2(d.getHours()) + ":" + pad2(d.getMinutes()); }
+function dayOffset(n) { var d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() + n); return d; }
+function eventsOn(d) {
+  var out = [], ev = DATA.events || [];
+  for (var i = 0; i < ev.length; i++) { var s = parseDate(ev[i].start); if (sameDay(s, d)) out.push(ev[i]); }
+  out.sort(function(a, b) { return parseDate(a.start) - parseDate(b.start); });
+  return out;
+}
+function nextEvent() {
+  var now = new Date(), best = null, bt = 0, ev = DATA.events || [];
+  for (var i = 0; i < ev.length; i++) { var t = parseDate(ev[i].end || ev[i].start).getTime(); var st = parseDate(ev[i].start).getTime(); if (t >= now.getTime() && (best === null || st < bt)) { best = ev[i]; bt = st; } }
+  return best;
+}
+function pick(list) { if (!list || !list.length) return null; return list[refreshCount % list.length]; }
+function flash(cb) {
+  if (!CONFIG.flashOnRefresh) { cb(); return; }
+  var f = $("flash"); f.style.display = "block";
+  setTimeout(function() { f.style.display = "none"; cb(); }, 300);
+}
+function on(el, fn) { if (!el) return; el.onclick = function(e) { fn(e || window.event); return false; }; }
+function show(id) {
+  var pages = document.getElementsByClassName ? document.getElementsByClassName("page") : document.querySelectorAll(".page");
+  for (var i = 0; i < pages.length; i++) pages[i].className = pages[i].className.replace(/\bon\b/g, "").replace(/\s+$/, "");
+  var p = $(id); p.className = p.className + " on";
+  window.scrollTo(0, 0);
+}
+function topbar(title) {
+  return '<div class="topbar"><div class="btn back" data-nav="home">&lt; Home</div><div class="title">' + esc(title) + '</div><div class="sync">' + syncText() + '</div><div class="btn refresh" data-act="refresh">Refresh</div></div>';
+}
+function syncText() {
+  if (!lastSync) return "Not synced";
+  return (syncOk ? "Synced " : "Sync failed, showing ") + hm(lastSync);
+}
+function weekSquares(arr) {
+  var h = '', n = 0; arr = arr || [];
+  for (var i = 0; i < 7; i++) { var y = arr[i] ? 1 : 0; n += y; h += '<span class="' + (y ? 'y' : '') + '"></span>'; }
+  return '<div class="week">' + h + '<div class="lbl">' + n + ' of last 7</div></div>';
+}
+
+/* ======================= RENDER: HOME ======================= */
+function renderHome() {
+  var now = new Date();
+  $("h-date").innerHTML = DAYS[now.getDay()] + ", " + now.getDate() + " " + MONTHS3[now.getMonth()] + " " + now.getFullYear();
+  var w = DATA.weather || {};
+  $("h-weather").innerHTML = (w.tempC !== undefined ? Math.round(w.tempC) + "&deg;" : "") + (w.summary ? "  " + esc(w.summary) : "") + (w.hiC !== undefined ? "  " + Math.round(w.hiC) + "/" + Math.round(w.loC) + "&deg;" : "");
+  $("h-sync").innerHTML = syncText();
+  renderCalendar(now);
+  renderNext();
+  renderTasksHome();
+  renderTiles();
+  renderLearn();
+  renderNewsHome();
+}
+
+function renderCalendar(now) {
+  $("cal-head").innerHTML = MONTHS[now.getMonth()] + " " + now.getFullYear();
+  var first = new Date(now.getFullYear(), now.getMonth(), 1);
+  var startDow = first.getDay(); if (CONFIG.weekStartsMonday) startDow = (startDow + 6) % 7;
+  var names = CONFIG.weekStartsMonday ? ["Mo","Tu","We","Th","Fr","Sa","Su"] : ["Su","Mo","Tu","We","Th","Fr","Sa"];
+  var h = "<tr>"; for (var i = 0; i < 7; i++) h += "<th>" + names[i] + "</th>"; h += "</tr>";
+  var d = new Date(first); d.setDate(d.getDate() - startDow);
+  for (var r = 0; r < 6; r++) {
+    h += "<tr>";
+    for (var c = 0; c < 7; c++) {
+      var cls = []; if (d.getMonth() !== now.getMonth()) cls.push("other"); if (sameDay(d, now)) cls.push("today");
+      var has = eventsOn(d).length > 0;
+      h += '<td class="' + cls.join(" ") + '" data-nav="day" data-off="' + Math.round((d - dayOffset(0)) / 86400000) + '"><span class="n">' + d.getDate() + '</span><span class="' + (has ? "dot" : "nodot") + '"></span></td>';
+      d.setDate(d.getDate() + 1);
+    }
+    h += "</tr>";
+  }
+  $("cal-table").innerHTML = h;
+}
+
+function renderNext() {
+  var ev = nextEvent();
+  if (!ev) { $("next-ev").innerHTML = "Nothing scheduled"; $("next-when").innerHTML = ""; return; }
+  var s = parseDate(ev.start), e = ev.end ? parseDate(ev.end) : null, now = new Date();
+  var when = sameDay(s, now) ? "Today" : (sameDay(s, dayOffset(1)) ? "Tomorrow" : DAYS3[s.getDay()] + " " + s.getDate() + " " + MONTHS3[s.getMonth()]);
+  when += " " + hm(s) + (e ? " to " + hm(e) : "") + (ev.location ? "  |  " + esc(ev.location) : "");
+  $("next-ev").innerHTML = esc(ev.title);
+  $("next-when").innerHTML = when;
+}
+
+function renderTasksHome() {
+  var tasks = DATA.tasks || [], top = [], doneCount = 0, total = 0;
+  for (var i = 0; i < tasks.length; i++) { if (tasks[i].top && top.length < 3) top.push(tasks[i]); if (tasks[i].done) doneCount++; total++; }
+  var h = "";
+  for (var j = 0; j < top.length; j++) {
+    var t = top[j];
+    h += '<div class="task' + (t.done ? " done" : "") + '" style="top:' + (48 + j * 180) + 'px" data-nav="tasks">' +
+      '<div class="box" data-act="toggle-task" data-id="' + esc(t.id) + '">' + (t.done ? "&#10003;" : "") + '</div>' +
+      '<div class="t">' + esc(t.title) + '</div>' +
+      '<div class="m">' + esc(t.project || "") + (t.estimateMin ? "  |  ~" + t.estimateMin + " min" : "") + '</div>' +
+      '<div class="step">' + (t.nextStep ? "Next: " + esc(t.nextStep) : "") + '</div></div>';
+  }
+  $("tasks-list").innerHTML = h;
+  var topDone = 0; for (var k = 0; k < top.length; k++) if (top[k].done) topDone++;
+  $("tasks-done").innerHTML = topDone + " of " + top.length + " done";
+  $("tasks-foot").innerHTML = (total - doneCount) + " open in total, " + doneCount + " done today. Tap for the full list.";
+}
+
+function renderTiles() {
+  var p = DATA.practice || {}, h = "", top = 104, gap = 18;
+  function tile(idx, key, name, done, sub, extra, last7) {
+    return '<div class="panel tile' + (done ? " done" : "") + '" style="top:' + (top + idx * (172 + gap)) + 'px" data-nav="' + key + '">' +
+      '<div class="name">' + name + '</div><div class="chk" data-act="toggle-practice" data-key="' + key + '">' + (done ? "&#10003;" : "") + '</div>' +
+      '<div class="sub">' + sub + '</div>' + (extra || weekSquares(last7)) + '</div>';
+  }
+  var g = p.guitar || {}, d = p.german || {}, v = p.vocab || {}, r = p.reading || {};
+  h += tile(0, "guitar", "Guitar", g.doneToday, esc(g.current || "") + (g.today ? "<br>" + esc(g.today) : ""), null, g.last7);
+  h += tile(1, "german", "German" + (d.level ? " " + esc(d.level) : ""), d.doneToday, (d.dueReviews ? d.dueReviews + " reviews due" : "No reviews due") + "<br>Sentence below", null, d.last7);
+  h += tile(2, "vocab", "English vocab", v.doneToday, (v.dueReviews ? v.dueReviews + " words due" : "No words due") + "<br>Word of the day below", null, v.last7);
+  var b = r.book || {}, pct = b.pages ? Math.round(100 * (b.page || 0) / b.pages) : 0;
+  h += tile(3, "reading", "Reading", r.doneToday, esc(b.title || "No book") + (b.author ? "<br>" + esc(b.author) : ""),
+    '<div class="bar"><div style="width:' + pct + '%"></div></div><div class="barlbl">' + pct + '%, p.' + (b.page || 0) + '/' + (b.pages || 0) + '</div>', r.last7);
+  $("tiles").innerHTML = h;
+}
+
+function renderLearn() {
+  var p = DATA.practice || {}, s = pick((p.german || {}).sentences), w = pick((p.vocab || {}).words);
+  $("de-text").innerHTML = s ? esc(s.de) : "";
+  $("de-trans").innerHTML = s ? esc(s.en) : "";
+  $("en-word").innerHTML = w ? esc(w.word) + (w.pos ? ' <span class="pos">' + esc(w.pos) + '</span>' : "") : "";
+  $("en-def").innerHTML = w ? esc(w.definition) + (w.example ? ' <i>' + esc(w.example) + '</i>' : "") : "";
+  if (!CONFIG.showNews) { $("learn").style.width = "1400px"; $("learn-de").style.width = "720px"; $("learn-en").style.left = "776px"; }
+}
+
+function renderNewsHome() {
+  var n = $("news");
+  if (!CONFIG.showNews) { n.style.display = "none"; return; }
+  var list = DATA.news || [], h = "";
+  for (var i = 0; i < Math.min(2, list.length); i++) h += '<div class="h" style="top:' + (58 + i * 62) + 'px"><span class="src">' + esc(list[i].source || "") + ':</span> ' + esc(list[i].title) + '</div>';
+  $("news-list").innerHTML = h;
+  n.setAttribute("data-nav", "news");
+}
+
+/* ======================= RENDER: DETAIL PAGES ======================= */
+function renderTasksPage() {
+  var tasks = DATA.tasks || [], top = "", rest = "";
+  for (var i = 0; i < tasks.length; i++) {
+    var t = tasks[i];
+    var row = '<div class="row chk' + (t.done ? " done" : "") + '"><div class="box" data-act="toggle-task" data-id="' + esc(t.id) + '">' + (t.done ? "&#10003;" : "") + '</div>' +
+      esc(t.title) + '<div class="sm">' + esc(t.project || "") + (t.estimateMin ? "  |  ~" + t.estimateMin + " min" : "") + (t.nextStep ? "  |  Next: " + esc(t.nextStep) : "") + '</div></div>';
+    if (t.top) top += row; else rest += row;
+  }
+  $("p-tasks").innerHTML = topbar("Tasks") + '<div class="list"><div class="section">Top 3 today</div>' + top + '<div class="section">Next</div>' + (rest || '<div class="row">Nothing else. Good.</div>') + '</div>';
+}
+
+function renderDayPage() {
+  var d = dayOffset(dayCursor), list = eventsOn(d), h = "";
+  for (var i = 0; i < list.length; i++) {
+    var s = parseDate(list[i].start), e = list[i].end ? parseDate(list[i].end) : null;
+    h += '<div class="row">' + hm(s) + (e ? " to " + hm(e) : "") + "  " + esc(list[i].title) + (list[i].location ? '<div class="sm">' + esc(list[i].location) + '</div>' : "") + '</div>';
+  }
+  if (!h) h = '<div class="row">No events. Free day.</div>';
+  var label = DAYS[d.getDay()] + ", " + d.getDate() + " " + MONTHS[d.getMonth()] + (dayCursor === 0 ? " (today)" : "");
+  $("p-day").innerHTML = topbar("Calendar") + '<div class="list"><div class="section">' + label + '</div>' + h + '</div>' +
+    '<div class="btn pager prev" data-act="day-prev">&lt; Previous day</div><div class="btn pager next" data-act="day-next">Next day &gt;</div>';
+}
+
+function renderGuitarPage() {
+  var g = (DATA.practice || {}).guitar || {}, plan = g.plan || [], h = "";
+  for (var i = 0; i < plan.length; i++) h += '<div class="row">' + (i + 1) + ". " + esc(plan[i]) + '</div>';
+  $("p-guitar").innerHTML = topbar("Guitar") +
+    '<div class="two l"><div class="section">Current</div><div class="bigtext">' + esc(g.current || "") + '</div><div class="midtext">' + esc(g.today || "") + '</div>' +
+    '<div class="section">Notes</div><div class="midtext" style="padding-top:16px">' + esc(g.notes || "") + '</div>' +
+    '<div class="weekrow">' + weekSquares(g.last7) + '</div></div>' +
+    '<div class="two r"><div class="section">Today\'s plan</div>' + h + '</div>' +
+    '<div class="btn pager next ' + (g.doneToday ? "dark" : "") + '" data-act="toggle-practice" data-key="guitar">' + (g.doneToday ? "Done today" : "Mark done") + '</div>';
+}
+
+function renderGermanPage() {
+  var g = (DATA.practice || {}).german || {}, s = pick(g.sentences), rv = g.review || [], h = "";
+  for (var i = 0; i < rv.length; i++) h += '<div class="row">' + esc(rv[i].de) + '<div class="sm">' + esc(rv[i].en) + '</div></div>';
+  $("p-german").innerHTML = topbar("German" + (g.level ? " " + esc(g.level) : "")) +
+    '<div class="two l"><div class="section">Sentence of the day</div><div class="bigtext">' + (s ? esc(s.de) : "") + '</div><div class="midtext">' + (s ? esc(s.en) : "") + '</div>' +
+    '<div class="stat" style="left:20px;top:420px"><div class="v">' + (g.dueReviews || 0) + '</div><div class="k">Reviews due</div></div>' +
+    '<div class="weekrow">' + weekSquares(g.last7) + '</div></div>' +
+    '<div class="two r"><div class="section">Review</div>' + (h || '<div class="row">Nothing due.</div>') + '</div>' +
+    '<div class="btn pager next ' + (g.doneToday ? "dark" : "") + '" data-act="toggle-practice" data-key="german">' + (g.doneToday ? "Done today" : "Mark done") + '</div>';
+}
+
+function renderVocabPage() {
+  var v = (DATA.practice || {}).vocab || {}, w = pick(v.words), rv = v.review || [], h = "";
+  for (var i = 0; i < rv.length; i++) h += '<div class="row">' + esc(rv[i].word) + '<div class="sm">' + esc(rv[i].definition) + '</div></div>';
+  $("p-vocab").innerHTML = topbar("English vocabulary") +
+    '<div class="two l"><div class="section">Word of the day</div><div class="bigtext">' + (w ? esc(w.word) + (w.pos ? ' <span class="pos" style="font-size:28px;font-style:italic;font-weight:normal">' + esc(w.pos) + '</span>' : "") : "") + '</div>' +
+    '<div class="midtext">' + (w ? esc(w.definition) + (w.example ? '<br><i>' + esc(w.example) + '</i>' : "") : "") + '</div>' +
+    '<div class="stat" style="left:20px;top:420px"><div class="v">' + (v.dueReviews || 0) + '</div><div class="k">Words due</div></div>' +
+    '<div class="weekrow">' + weekSquares(v.last7) + '</div></div>' +
+    '<div class="two r"><div class="section">Review</div>' + (h || '<div class="row">Nothing due.</div>') + '</div>' +
+    '<div class="btn pager next ' + (v.doneToday ? "dark" : "") + '" data-act="toggle-practice" data-key="vocab">' + (v.doneToday ? "Done today" : "Mark done") + '</div>';
+}
+
+function renderReadingPage() {
+  var r = (DATA.practice || {}).reading || {}, b = r.book || {}, pct = b.pages ? Math.round(100 * (b.page || 0) / b.pages) : 0;
+  var ses = r.sessions || [], h = "", total = 0;
+  for (var i = 0; i < ses.length; i++) { total += ses[i].pages || 0; var d = parseDate(ses[i].date); h += '<div class="row">' + DAYS3[d.getDay()] + " " + d.getDate() + " " + MONTHS3[d.getMonth()] + '<div class="sm">' + (ses[i].pages || 0) + " pages" + (ses[i].minutes ? ", " + ses[i].minutes + " min" : "") + '</div></div>'; }
+  var nx = r.next || [], nh = "";
+  for (var j = 0; j < nx.length; j++) nh += '<div class="row">' + esc(nx[j].title) + '<div class="sm">' + esc(nx[j].author || "") + '</div></div>';
+  var left = (b.pages || 0) - (b.page || 0), avg = ses.length ? Math.max(1, Math.round(total / ses.length)) : 0, daysLeft = avg ? Math.ceil(left / avg) : 0;
+  $("p-reading").innerHTML = topbar("Reading") +
+    '<div class="two l"><div class="section">Now reading</div><div class="bigtext">' + esc(b.title || "No book") + '</div><div class="midtext">' + esc(b.author || "") + '</div>' +
+    '<div class="readbar" style="top:260px"><div style="width:' + pct + '%"></div></div>' +
+    '<div class="stat" style="left:20px;top:340px"><div class="v">' + pct + '%</div><div class="k">page ' + (b.page || 0) + ' of ' + (b.pages || 0) + '</div></div>' +
+    '<div class="stat" style="left:300px;top:340px"><div class="v">' + left + '</div><div class="k">pages left</div></div>' +
+    '<div class="stat" style="left:500px;top:340px"><div class="v">' + (daysLeft || "-") + '</div><div class="k">days left at ' + avg + ' p/d</div></div>' +
+    '<div class="weekrow">' + weekSquares(r.last7) + '</div></div>' +
+    '<div class="two r"><div class="section">Recent sessions</div>' + (h || '<div class="row">No sessions yet.</div>') + '<div class="section">Up next</div>' + (nh || '<div class="row">Nothing queued.</div>') + '</div>' +
+    '<div class="btn pager next ' + (r.doneToday ? "dark" : "") + '" data-act="toggle-practice" data-key="reading">' + (r.doneToday ? "Read today" : "Mark read")+ '</div>';
+}
+
+function renderNewsPage() {
+  var list = DATA.news || [], h = "";
+  for (var i = 0; i < list.length; i++) h += '<div class="row">' + esc(list[i].title) + '<div class="sm">' + esc(list[i].source || "") + (list[i].summary ? "  |  " + esc(list[i].summary) : "") + '</div></div>';
+  $("p-news").innerHTML = topbar("News") + '<div class="list">' + (h || '<div class="row">No news. Also fine.</div>') + '</div>';
+}
+
+function renderAll() {
+  renderHome(); renderTasksPage(); renderDayPage(); renderGuitarPage(); renderGermanPage(); renderVocabPage(); renderReadingPage(); renderNewsPage();
+}
+
+/* ======================= ACTIONS ======================= */
+function findTask(id) { var t = DATA.tasks || []; for (var i = 0; i < t.length; i++) if (t[i].id === id) return t[i]; return null; }
+function postJson(path, body) {
+  if (!CONFIG.apiUrl) return;
+  try {
+    var x = new XMLHttpRequest();
+    x.open("POST", CONFIG.apiUrl.replace(/\/$/, "") + path, true);
+    x.setRequestHeader("Content-Type", "application/json");
+    x.send(JSON.stringify(body));
+  } catch (e) {}
+}
+function toggleTask(id) {
+  var t = findTask(id); if (!t) return;
+  t.done = !t.done;
+  postJson("/tasks/" + encodeURIComponent(id) + "/done", { done: t.done });
+  renderAll();
+}
+function togglePractice(key) {
+  var p = (DATA.practice || {})[key]; if (!p) return;
+  p.doneToday = !p.doneToday;
+  if (p.last7 && p.last7.length) p.last7[p.last7.length - 1] = p.doneToday ? 1 : 0;
+  postJson("/practice/" + key + "/done", { done: p.doneToday });
+  renderAll();
+}
+function navigate(where, off) {
+  if (where === "home") { show("p-home"); return; }
+  if (where === "day") { dayCursor = off || 0; renderDayPage(); show("p-day"); return; }
+  show("p-" + where);
+}
+
+/* one delegated click handler for the whole stage */
+function handleClick(e) {
+  var el = e.target || e.srcElement;
+  while (el && el !== document.body) {
+    var act = el.getAttribute && el.getAttribute("data-act");
+    if (act) {
+      if (act === "refresh") refresh();
+      else if (act === "toggle-task") toggleTask(el.getAttribute("data-id"));
+      else if (act === "toggle-practice") togglePractice(el.getAttribute("data-key"));
+      else if (act === "day-prev") { dayCursor--; renderDayPage(); }
+      else if (act === "day-next") { dayCursor++; renderDayPage(); }
+      return;
+    }
+    var nav = el.getAttribute && el.getAttribute("data-nav");
+    if (nav) { navigate(nav, parseInt(el.getAttribute("data-off") || "0", 10)); return; }
+    el = el.parentNode;
+  }
+}
+
+/* ======================= LOAD / REFRESH ======================= */
+function load(cb) {
+  if (!CONFIG.apiUrl) { DATA = mockData(); lastSync = new Date(); syncOk = true; cb(); return; }
+  var x = new XMLHttpRequest(), done = false;
+  function finish(ok, obj, msg) {
+    if (done) return; done = true;
+    if (ok) { DATA = obj; syncOk = true; $("err").style.display = "none"; }
+    else { if (!DATA) DATA = mockData(); syncOk = false; $("err").innerHTML = "Could not reach backend: " + esc(msg); $("err").style.display = "block"; }
+    lastSync = new Date(); cb();
+  }
+  try {
+    x.open("GET", CONFIG.apiUrl.replace(/\/$/, "") + "/dashboard?t=" + new Date().getTime(), true);
+    x.onreadystatechange = function() {
+      if (x.readyState !== 4) return;
+      if (x.status >= 200 && x.status < 300) { try { finish(true, JSON.parse(x.responseText)); } catch (e) { finish(false, null, "bad JSON"); } }
+      else finish(false, null, "HTTP " + x.status);
+    };
+    x.send(null);
+    setTimeout(function() { finish(false, null, "timeout"); }, 10000);
+  } catch (e) { finish(false, null, String(e)); }
+}
+function refresh() {
+  refreshCount++;
+  flash(function() { load(function() { renderAll(); }); });
+}
+
+/* ======================= FIT TO SCREEN ======================= */
+function fit() {
+  var W = 1448, H = 1072, vw = window.innerWidth || document.documentElement.clientWidth, vh = window.innerHeight || document.documentElement.clientHeight;
+  var st = $("stage"), t;
+  if (CONFIG.landscape) {
+    var s = Math.min(vw / H, vh / W);
+    var ox = Math.floor((vw - H * s) / 2), oy = Math.floor((vh - W * s) / 2);
+    if (CONFIG.rotation === 90) t = "translate(" + (ox + H * s) + "px," + oy + "px) rotate(90deg) scale(" + s + ")";
+    else t = "translate(" + ox + "px," + (oy + W * s) + "px) rotate(-90deg) scale(" + s + ")";
+  } else {
+    var s2 = Math.min(vw / W, vh / H);
+    t = "translate(" + Math.floor((vw - W * s2) / 2) + "px," + Math.floor((vh - H * s2) / 2) + "px) scale(" + s2 + ")";
+  }
+  st.style.WebkitTransform = t; st.style.transform = t;
+}
+
+/* ======================= BOOT ======================= */
+function boot() {
+  fit();
+  window.onresize = fit;
+  $("stage").onclick = handleClick;
+  load(function() { renderAll(); });
+}
+if (document.readyState === "complete") boot(); else window.onload = boot;
+</script>
+</body>
+</html>

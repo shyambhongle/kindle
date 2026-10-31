@@ -1,0 +1,29 @@
+# /etc/systemd/system/dashboard.service
+# sudo useradd -r -s /usr/sbin/nologin dashboard
+# sudo mkdir -p /opt/dashboard && copy: dashboard (binary), client/, data/, .env
+# sudo chown -R dashboard:dashboard /opt/dashboard && sudo chmod 600 /opt/dashboard/.env
+# sudo systemctl enable --now dashboard
+
+[Unit]
+Description=Kindle dashboard backend
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+User=dashboard
+Group=dashboard
+WorkingDirectory=/opt/dashboard
+ExecStart=/opt/dashboard/dashboard serve
+Restart=always
+RestartSec=5
+
+# hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/dashboard
+MemoryMax=128M
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,18 @@
+# status: reading | next | done. Only one book should be "reading" at a time.
+- title: "Deep Work"
+  author: "Cal Newport"
+  pages: 296
+  status: reading
+  started_on: 2026-10-12
+- title: "Atomic Habits"
+  author: "James Clear"
+  pages: 320
+  status: next
+- title: "Four Thousand Weeks"
+  author: "Oliver Burkeman"
+  pages: 288
+  status: next
+- title: "Getting Things Done"
+  author: "David Allen"
+  pages: 352
+  status: done

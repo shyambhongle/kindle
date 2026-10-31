@@ -1,0 +1,4 @@
+# One RSS or Atom feed per line. Optional name after a pipe.
+https://feeds.bbci.co.uk/news/science_and_environment/rss.xml | BBC Science
+https://www.thehindu.com/news/cities/pune/feeder/default.rss | The Hindu Pune
+https://feeds.arstechnica.com/arstechnica/technology-lab | Ars Technica

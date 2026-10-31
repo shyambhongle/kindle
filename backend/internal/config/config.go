@@ -1,0 +1,106 @@
+// Package config loads settings from environment variables (and an optional .env file).
+package config
+
+import (
+	"bufio"
+	"crypto/rand"
+	"encoding/hex"
+	"errors"
+	"fmt"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+)
+
+type Config struct {
+	ListenAddr      string        // e.g. "0.0.0.0:8080" or "192.168.1.20:8080"
+	DatabaseURL     string        // postgres://user:pass@localhost:5432/dashboard
+	AccessToken     string        // long random string, part of every URL
+	DataDir         string        // folder with the seed datasets
+	ClientDir       string        // folder with index.html
+	Timezone        *time.Location
+	CollectEvery    time.Duration
+	Latitude        float64
+	Longitude       float64
+	WeatherLocation string
+	NotionToken     string
+	NotionTasksDB   string
+	CalendarICSURL  string
+	GuitarStartDate string
+	Mock            bool // force dummy data for every external source
+}
+
+// Load reads .env (if present) then the environment. Environment wins.
+func Load() (*Config, error) {
+	loadDotEnv(".env")
+	loadDotEnv("secrets/.env")
+
+	c := &Config{
+		ListenAddr:      env("LISTEN_ADDR", "0.0.0.0:8080"),
+		DatabaseURL:     env("DATABASE_URL", "postgres://dashboard:dashboard@localhost:5432/dashboard?sslmode=disable"),
+		AccessToken:     env("ACCESS_TOKEN", ""),
+		DataDir:         env("DATA_DIR", "data"),
+		ClientDir:       env("CLIENT_DIR", "client"),
+		WeatherLocation: env("WEATHER_LOCATION", "Pune"),
+		NotionToken:     env("NOTION_TOKEN", ""),
+		NotionTasksDB:   env("NOTION_TASKS_DB", ""),
+		CalendarICSURL:  env("CALENDAR_ICS_URL", ""),
+		GuitarStartDate: env("GUITAR_START_DATE", ""),
+		Mock:            env("MOCK", "false") == "true",
+	}
+	var err error
+	if c.Timezone, err = time.LoadLocation(env("TZ", "Asia/Kolkata")); err != nil {
+		return nil, fmt.Errorf("TZ: %w", err)
+	}
+	if c.CollectEvery, err = time.ParseDuration(env("COLLECT_EVERY", "15m")); err != nil {
+		return nil, fmt.Errorf("COLLECT_EVERY: %w", err)
+	}
+	if c.Latitude, err = strconv.ParseFloat(env("WEATHER_LAT", "18.5204"), 64); err != nil {
+		return nil, fmt.Errorf("WEATHER_LAT: %w", err)
+	}
+	if c.Longitude, err = strconv.ParseFloat(env("WEATHER_LON", "73.8567"), 64); err != nil {
+		return nil, fmt.Errorf("WEATHER_LON: %w", err)
+	}
+	if len(c.AccessToken) < 24 {
+		return nil, errors.New("ACCESS_TOKEN must be set and at least 24 characters (run: dashboard token)")
+	}
+	return c, nil
+}
+
+// NewToken returns a 32 byte random hex token for ACCESS_TOKEN.
+func NewToken() string {
+	b := make([]byte, 32)
+	_, _ = rand.Read(b)
+	return hex.EncodeToString(b)
+}
+
+func env(key, def string) string {
+	if v, ok := os.LookupEnv(key); ok && v != "" {
+		return v
+	}
+	return def
+}
+
+func loadDotEnv(path string) {
+	f, err := os.Open(path)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	sc := bufio.NewScanner(f)
+	for sc.Scan() {
+		line := strings.TrimSpace(sc.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		k, v, ok := strings.Cut(line, "=")
+		if !ok {
+			continue
+		}
+		k, v = strings.TrimSpace(k), strings.Trim(strings.TrimSpace(v), `"'`)
+		if _, exists := os.LookupEnv(k); !exists {
+			os.Setenv(k, v)
+		}
+	}
+}

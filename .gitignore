@@ -1,0 +1,30 @@
+# secrets
+.env
+*.env
+!.env.example
+secrets/
+
+# Go build output and vendored modules (run `go mod vendor` locally if needed)
+backend/dashboard
+backend/dashboard-pi
+backend/vendor/
+backend/vendor.tgz
+*.exe
+*.test
+*.out
+
+# editors and OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
+
+# Kindle / KOReader runtime files that must never be committed
+koreader/settings/
+*.sdr/
+crash.log
+
+# local scratch
+tmp/
+*.log
